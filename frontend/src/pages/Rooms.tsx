@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { Users, Wifi, Coffee, Tv, Gamepad2, CircleDot, PartyPopper } from "lucide-react";
-
-const API_URL = "http://localhost:8000/api/rooms"; // ← عدّل الرابط حسب سيرفر Laravel
+import { getRooms } from "@/api/rooms.js"; // ← هنا التغيير
 
 const RoomCard = ({ room }) => (
   <Card className="overflow-hidden hover-lift card-gradient border-2 animate-scale-in">
@@ -50,7 +49,6 @@ const RoomCard = ({ room }) => (
           <span>{room.capacity} {room.capacity > 20 ? "شخص" : "أشخاص"}</span>
         </div>
 
-        {/* مميزات */}
         {room.features?.includes("واي فاي") && (
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Wifi className="h-4 w-4" />
@@ -86,12 +84,10 @@ const Rooms = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // جلب الغرف من Laravel API
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
+        const { data } = await getRooms(); // ← استخدام Axios service
         setRooms(data);
       } catch (err) {
         console.error("حدث خطأ أثناء جلب البيانات:", err);
@@ -110,7 +106,6 @@ const Rooms = () => {
     );
   }
 
-  // تقسيم الغرف حسب الفئة category
   const privateRooms = rooms.filter((r) => r.category === "غرف خاصة");
   const publicRooms = rooms.filter((r) => r.category === "غرف عامة");
   const eventHalls = rooms.filter((r) => r.category === "صالات المناسبات");
@@ -121,7 +116,6 @@ const Rooms = () => {
     <div className="min-h-screen">
       <Navbar />
       <main className="pt-16">
-        {/* Page Header */}
         <section className="bg-gradient-to-b from-primary/10 to-background py-20 px-4">
           <div className="container mx-auto text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold">غرفنا ومرافقنا</h1>
@@ -131,7 +125,6 @@ const Rooms = () => {
           </div>
         </section>
 
-        {/* Tabs */}
         <section className="py-12 px-4">
           <div className="container mx-auto">
             <Tabs defaultValue="private" className="w-full" dir="rtl">
@@ -158,7 +151,6 @@ const Rooms = () => {
                 </TabsTrigger>
               </TabsList>
 
-              {/* محتوى التبويبات */}
               <TabsContent value="private">
                 <CategorySection title="الغرف الخاصة" rooms={privateRooms} />
               </TabsContent>
@@ -187,7 +179,6 @@ const Rooms = () => {
   );
 };
 
-// مكون فرعي لعرض كل فئة
 const CategorySection = ({ title, rooms }) => (
   <>
     <div className="mb-6 p-6 bg-card rounded-lg border">
