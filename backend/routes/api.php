@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\FootballMatchController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
-
+use App\Http\Controllers\Api\BookingController;
 
 Route::apiResource('rooms', RoomController::class);
 
@@ -25,3 +25,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+
+Route::apiResource('bookings', BookingController::class);

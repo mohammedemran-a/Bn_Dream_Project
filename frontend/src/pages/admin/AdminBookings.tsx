@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,62 +20,72 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const bookingsData = [
-  { 
-    id: 1, 
-    user: "أحمد محمد", 
-    phone: "0501234567",
-    room: "جناح VIP", 
-    checkIn: "2025-10-25", 
-    checkOut: "2025-10-27",
-    guests: 4,
-    status: "قيد المراجعة",
-    total: 1600
-  },
-  { 
-    id: 2, 
-    user: "سارة علي", 
-    phone: "0507654321",
-    room: "غرفة عائلية", 
-    checkIn: "2025-10-24", 
-    checkOut: "2025-10-25",
-    guests: 6,
-    status: "مؤكد",
-    total: 500
-  },
-  { 
-    id: 3, 
-    user: "محمد خالد", 
-    phone: "0509876543",
-    room: "غرفة ديلوكس", 
-    checkIn: "2025-10-26", 
-    checkOut: "2025-10-28",
-    guests: 3,
-    status: "ملغي",
-    total: 1200
-  },
-];
+import { getBookings, updateBooking } from "@/api/bookings";
+
+// 🧩 تعريف نوع الحجز (TypeScript)
+interface Booking {
+  id: number;
+  user?: { name: string };
+  room?: { name: string };
+  user_id?: number;
+  room_id?: number;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  total_price: number;
+  status: string;
+}
 
 const AdminBookings = () => {
-  const [bookings, setBookings] = useState(bookingsData);
-  const [statusFilter, setStatusFilter] = useState("الكل");
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("الكل");
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "مؤكد": return "default";
-      case "قيد المراجعة": return "secondary";
-      case "ملغي": return "destructive";
-      default: return "outline";
+  // 🟢 تحميل الحجوزات من الـ API (داخل useCallback)
+  const fetchBookings = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await getBookings(statusFilter);
+      setBookings(res.data);
+    } catch (error) {
+      console.error("فشل في جلب الحجوزات:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter]);
+
+  // 🟠 تغيير حالة الحجز (تأكيد أو إلغاء)
+  const changeStatus = async (id: number, newStatus: string) => {
+    try {
+      await updateBooking(id, { status: newStatus });
+      fetchBookings(); // إعادة تحميل بعد التحديث
+    } catch (error) {
+      console.error("فشل في تحديث الحالة:", error);
     }
   };
 
-  const filteredBookings = statusFilter === "الكل" 
-    ? bookings 
-    : bookings.filter(b => b.status === statusFilter);
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  // 🎨 تحديد لون الشارة بناءً على الحالة
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "مؤكد":
+        return "default";
+      case "قيد المراجعة":
+        return "secondary";
+      case "ملغي":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
 
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
+        {/* العنوان */}
         <div>
           <h1 className="text-3xl font-bold mb-2">إدارة الحجوزات</h1>
           <p className="text-muted-foreground">متابعة جميع الحجوزات وتحديث حالتها</p>
@@ -98,57 +108,86 @@ const AdminBookings = () => {
               </Select>
             </div>
           </CardHeader>
+
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>المستخدم</TableHead>
-                  <TableHead>رقم الهاتف</TableHead>
-                  <TableHead>الغرفة</TableHead>
-                  <TableHead>الوصول</TableHead>
-                  <TableHead>المغادرة</TableHead>
-                  <TableHead>الضيوف</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-right">العمليات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings.map((booking) => (
-                  <TableRow key={booking.id} className="hover:bg-accent/5">
-                    <TableCell className="font-medium">{booking.user}</TableCell>
-                    <TableCell className="font-mono text-sm">{booking.phone}</TableCell>
-                    <TableCell>{booking.room}</TableCell>
-                    <TableCell>{booking.checkIn}</TableCell>
-                    <TableCell>{booking.checkOut}</TableCell>
-                    <TableCell>{booking.guests}</TableCell>
-                    <TableCell className="font-medium">{booking.total} ريال</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(booking.status)}>
-                        {booking.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button size="sm" variant="ghost" className="hover:bg-primary/10">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {booking.status === "قيد المراجعة" && (
-                          <>
-                            <Button size="sm" variant="ghost" className="hover:bg-success/10 text-success">
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="hover:bg-destructive/10 text-destructive">
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+            {loading ? (
+              <p className="text-center py-6">جاري تحميل الحجوزات...</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>المستخدم</TableHead>
+                    <TableHead>الغرفة</TableHead>
+                    <TableHead>الوصول</TableHead>
+                    <TableHead>المغادرة</TableHead>
+                    <TableHead>الضيوف</TableHead>
+                    <TableHead>المبلغ</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead className="text-right">العمليات</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+
+                <TableBody>
+                  {bookings.length > 0 ? (
+                    bookings.map((booking) => (
+                      <TableRow key={booking.id} className="hover:bg-accent/5">
+                        <TableCell>{booking.user?.name || `#${booking.user_id}`}</TableCell>
+                        <TableCell>{booking.room?.name || `#${booking.room_id}`}</TableCell>
+                        <TableCell>{booking.check_in}</TableCell>
+                        <TableCell>{booking.check_out}</TableCell>
+                        <TableCell>{booking.guests}</TableCell>
+                        <TableCell>{booking.total_price} ريال</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusVariant(booking.status)}>
+                            {booking.status || "قيد المراجعة"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="hover:bg-primary/10"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+
+                            {booking.status === "قيد المراجعة" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="hover:bg-success/10 text-success"
+                                  onClick={() => changeStatus(booking.id, "مؤكد")}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="hover:bg-destructive/10 text-destructive"
+                                  onClick={() => changeStatus(booking.id, "ملغي")}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      {/* ✅ تم تعديل colSpan إلى رقم */}
+                      <TableCell colSpan={8} className="text-center py-6">
+                        لا توجد حجوزات حالياً
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -157,3 +196,4 @@ const AdminBookings = () => {
 };
 
 export default AdminBookings;
+

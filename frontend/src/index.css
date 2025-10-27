@@ -123,8 +123,8 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    direction: rtl;
-    font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+     direction: rtl;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 }
 

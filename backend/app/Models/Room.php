@@ -10,4 +10,9 @@ class Room extends Model
      protected $fillable = [
         'category', 'name', 'price', 'status', 'capacity', 'description', 'features', 'image_path'
     ];
+
+        public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
 }
