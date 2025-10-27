@@ -5,21 +5,42 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { login, register } from "@/api/auth"; // 👈 استدعاء دوال Laravel API
 
 const Auth = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({ name: "", phone: "", email: "", password: "" });
+  const [registerData, setRegisterData] = useState({ name: "", email: "", password: "" });
 
-  const handleLogin = (e: React.FormEvent) => {
+  // 🔐 تسجيل الدخول
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Login:", loginData);
-    alert("تم تسجيل الدخول بنجاح!");
+    try {
+      await login({
+        email: loginData.email,
+        password: loginData.password,
+      });
+      alert("✅ تم تسجيل الدخول بنجاح!");
+    } catch (error) {
+      console.error(error);
+      alert("❌ بيانات الدخول غير صحيحة!");
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  // 📝 إنشاء حساب جديد
+  const handleRegister = async (e) => {
     e.preventDefault();
-    console.log("Register:", registerData);
-    alert("تم إنشاء الحساب بنجاح!");
+    try {
+      await register({
+        name: registerData.name,
+        email: registerData.email,
+        password: registerData.password,
+        password_confirmation: registerData.password,
+      });
+      alert("✅ تم إنشاء الحساب بنجاح!");
+    } catch (error) {
+      console.error(error);
+      alert("❌ فشل إنشاء الحساب. تحقق من البيانات.");
+    }
   };
 
   return (
@@ -50,12 +71,13 @@ const Auth = () => {
                   </TabsTrigger>
                 </TabsList>
 
+                {/* 🟢 تبويب تسجيل الدخول */}
                 <TabsContent value="login">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">البريد الإلكتروني أو رقم الهاتف</label>
+                      <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
                       <Input
-                        placeholder="example@email.com أو +967 777 123 456"
+                        placeholder="example@email.com"
                         value={loginData.email}
                         onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                         required
@@ -80,6 +102,7 @@ const Auth = () => {
                   </form>
                 </TabsContent>
 
+                {/* 🟣 تبويب إنشاء حساب */}
                 <TabsContent value="register">
                   <form onSubmit={handleRegister} className="space-y-4">
                     <div>
@@ -88,16 +111,6 @@ const Auth = () => {
                         placeholder="أدخل اسمك"
                         value={registerData.name}
                         onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
-                      <Input
-                        type="tel"
-                        placeholder="+967 777 123 456"
-                        value={registerData.phone}
-                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
                         required
                       />
                     </div>
