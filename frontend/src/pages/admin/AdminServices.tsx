@@ -29,7 +29,8 @@ import {
 } from "@/api/products";
 import { Badge } from "@/components/ui/badge";
 
-const categories = ["البقالة", "القات", "الشيشة", "الكروت"];
+const categories = ["البقالة", "القات", "الشيشة", "الكروت", "القهوة"];
+
 
 const AdminServices = () => {
   const [products, setProducts] = useState([]);
@@ -59,7 +60,6 @@ const AdminServices = () => {
     fetchProducts();
   }, [fetchProducts]);
 
-  // 🧹 إعادة ضبط النموذج
   const resetForm = useCallback(() => {
     setForm({
       type: "البقالة",
@@ -324,7 +324,7 @@ const AdminServices = () => {
         </div>
 
         <Tabs defaultValue="البقالة">
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-5">
             {categories.map((cat) => (
               <TabsTrigger key={cat} value={cat}>
                 {cat}
