@@ -26,7 +26,7 @@ const HeroSection = () => {
               مرحباً بك في
             </span>
             <br />
-            <span className="text-foreground">الاستراحة الذهبية</span>
+            <span className="text-foreground"> استراحة BN-DREAM</span>
           </h1>
 
           {/* Description */}
@@ -49,30 +49,10 @@ const HeroSection = () => {
             </Link>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 animate-slide-up" style={{ animationDelay: "0.6s" }}>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">50+</div>
-              <div className="text-sm text-muted-foreground">غرفة فاخرة</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">1000+</div>
-              <div className="text-sm text-muted-foreground">عميل سعيد</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">24/7</div>
-              <div className="text-sm text-muted-foreground">خدمة عملاء</div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-primary rounded-full flex justify-center">
-          <div className="w-1 h-3 bg-primary rounded-full mt-2 animate-pulse" />
-        </div>
-      </div>
+      
     </section>
   );
 };
