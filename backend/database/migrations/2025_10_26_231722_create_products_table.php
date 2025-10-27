@@ -18,6 +18,7 @@ return new class extends Migration
                 'القات',
                 'الشيشة',
                 'الكروت',
+                'القهوة',
             ]);
             $table->string('name');
             $table->decimal('price', 10, 2);
