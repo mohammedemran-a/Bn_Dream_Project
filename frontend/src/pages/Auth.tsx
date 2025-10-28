@@ -15,12 +15,13 @@ import { useNavigate } from "react-router-dom"; // ✅ لإدارة الانتق
 import { login, register } from "@/api/auth"; // 👈 دوال Laravel API
 
 const Auth = () => {
-  const navigate = useNavigate(); // ✅ متغير الانتقال
+  const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
+    phone: "", // ✅ أضفنا حقل الهاتف هنا
     password: "",
   });
 
@@ -32,7 +33,7 @@ const Auth = () => {
         email: loginData.email,
         password: loginData.password,
       });
-      navigate("/"); // ✅ الانتقال مباشرة بعد تسجيل الدخول
+      navigate("/"); // ✅ الانتقال بعد تسجيل الدخول
     } catch (error) {
       console.error(error);
     }
@@ -45,10 +46,11 @@ const Auth = () => {
       await register({
         name: registerData.name,
         email: registerData.email,
+        phone: registerData.phone, // ✅ نرسل الهاتف إلى الـ API
         password: registerData.password,
         password_confirmation: registerData.password,
       });
-      navigate("/"); // ✅ الانتقال مباشرة بعد التسجيل
+      navigate("/"); // ✅ الانتقال بعد التسجيل
     } catch (error) {
       console.error(error);
     }
@@ -169,6 +171,24 @@ const Auth = () => {
                           })
                         }
                         required
+                      />
+                    </div>
+
+                    {/* ✅ حقل الهاتف الجديد */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        رقم الهاتف
+                      </label>
+                      <Input
+                        type="tel"
+                        placeholder="05xxxxxxxx"
+                        value={registerData.phone}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            phone: e.target.value,
+                          })
+                        }
                       />
                     </div>
 

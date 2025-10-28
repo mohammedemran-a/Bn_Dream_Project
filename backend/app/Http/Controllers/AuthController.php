@@ -9,25 +9,34 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // تسجيل حساب جديد
+    /**
+     * تسجيل حساب جديد
+     */
     public function register(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'nullable|string|max:20', // ✅ إضافة تحقق الهاتف
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone, // ✅ حفظ الهاتف في قاعدة البيانات
             'password' => Hash::make($request->password),
         ]);
 
-        return response()->json(['message' => 'User registered successfully', 'user' => $user]);
+        return response()->json([
+            'message' => 'User registered successfully',
+            'user' => $user
+        ], 201);
     }
 
-    // تسجيل الدخول
+    /**
+     * تسجيل الدخول
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -39,12 +48,17 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-       
+        $user = Auth::user();
 
-        return response()->json(['message' => 'Login successful']);
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user
+        ]);
     }
 
-    // تسجيل الخروج
+    /**
+     * تسجيل الخروج
+     */
     public function logout(Request $request)
     {
         Auth::guard('web')->logout();
