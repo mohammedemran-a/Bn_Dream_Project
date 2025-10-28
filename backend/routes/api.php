@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\FootballMatchController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\OrderController;
+
 
 Route::apiResource('rooms', RoomController::class);
 
@@ -14,6 +16,7 @@ Route::apiResource('products', ProductController::class);
 
 
 Route::apiResource('football-matches', FootballMatchController::class);
+
 
 
 // الحصول على المستخدم المسجل
@@ -28,3 +31,13 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 
 Route::apiResource('bookings', BookingController::class);
+
+
+Route::get('/orders', [OrderController::class, 'index']);
+Route::get('/orders/{id}', [OrderController::class, 'show']);
+Route::get('/orders/user/{userId}', [OrderController::class, 'getOrdersByUser']);
+Route::post('/orders', [OrderController::class, 'store']);
+Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
+
+
