@@ -1,127 +1,134 @@
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Bot as BotIcon, Send } from "lucide-react";
-import { useState } from "react";
+// src/pages/Bot.jsx
+import React, { useState, useRef, useEffect } from "react";
+import Navbar from "@/components/layout/Navbar"; // استيراد الشريط العلوي
+
+// ✅ 1. تم إلغاء كل منطق وحالات إخفاء الشريط العلوي (Navbar)
+// لا يوجد isNavbarVisible أو useEffect الخاص بحركة الماوس
 
 const Bot = () => {
-  const [messages, setMessages] = useState<{ text: string; sender: "user" | "bot" }[]>([
-    { text: "مرحباً! أنا بوت نظام استراحة بي إن إيدريم. كيف يمكنني مساعدتك اليوم؟", sender: "bot" }
+  const [messages, setMessages] = useState([
+    {
+      sender: "bot",
+      text: "👋 أهلاً بك! أنا مساعد Binadream الذكي، كيف يمكنني مساعدتك اليوم؟",
+    },
   ]);
-  const [inputMessage, setInputMessage] = useState("");
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!input.trim()) return;
 
-    setMessages([...messages, { text: inputMessage, sender: "user" }]);
-    
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        text: "شكراً لتواصلك معنا. سيتم الرد على استفسارك في أقرب وقت ممكن.", 
-        sender: "bot" 
-      }]);
-    }, 1000);
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
 
-    setInputMessage("");
+    try {
+      const response = await fetch("http://127.0.0.1:8020/ask", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: input } )
+      });
+
+      if (!response.ok) throw new Error(`Network response was not ok`);
+
+      const data = await response.json();
+      const botMessage = {
+        sender: "bot",
+        text: data.answer || "❌ لم أتمكن من فهم سؤالك، حاول بصيغة أخرى.",
+      };
+      setMessages((prev) => [...prev, botMessage]);
+
+    } catch (error) {
+      console.error("Fetch error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "⚠️ حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
-    <div className="min-h-screen flex flex-col">
+    // ✅ 2. استخدام نفس هيكل الصفحات العادية
+    <div className="flex flex-col min-h-screen bg-background">
       <Navbar />
-      <main className="flex-1 pt-24 pb-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12 animate-fade-in">
-            <BotIcon className="w-16 h-16 mx-auto mb-4 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent">
-              بوت الاستراحة
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              مساعدك الذكي للإجابة على جميع استفساراتك وحجوزاتك
-            </p>
+      
+      {/* ✅ 3. حاوية المحتوى الرئيسي مع مسافة علوية (pt-24) لمنع التداخل */}
+      <main className="flex-1 container mx-auto px-4 py-8 flex flex-col">
+        
+        {/* واجهة المحادثة */}
+        <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full border rounded-lg shadow-lg overflow-hidden">
+          
+          {/* منطقة الرسائل */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/20">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${
+                  msg.sender === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[80%] p-3 rounded-2xl text-sm sm:text-base shadow-md ${
+                    msg.sender === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-none"
+                      : "bg-muted text-foreground rounded-bl-none"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex justify-start">
+                <div className="p-3 bg-muted rounded-2xl rounded-bl-none shadow-md">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-2 h-2 bg-foreground rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-foreground rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-foreground rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
           </div>
 
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BotIcon className="w-5 h-5" />
-                محادثة مباشرة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 mb-4 min-h-[400px] max-h-[500px] overflow-y-auto p-4 bg-accent/5 rounded-lg">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[70%] p-3 rounded-lg ${
-                        message.sender === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      {message.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="اكتب رسالتك هنا..."
-                  className="flex-1"
-                />
-                <Button type="submit" className="gap-2">
-                  <Send className="w-4 h-4" />
-                  إرسال
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <div className="mt-12 grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">الحجوزات</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  يمكن للبوت مساعدتك في حجز الغرف والخدمات
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">الاستفسارات</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  احصل على إجابات فورية لجميع أسئلتك
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">الدعم الفني</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  مساعدة فورية على مدار الساعة
-                </p>
-              </CardContent>
-            </Card>
+          {/* شريط الإدخال */}
+          <div className="p-4 bg-background border-t">
+            <form
+              onSubmit={sendMessage}
+              className="flex items-center gap-3"
+            >
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="اكتب رسالتك هنا..."
+                className="flex-1 p-3 rounded-xl bg-muted border focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-primary hover:bg-primary/90 rounded-xl text-primary-foreground font-semibold transition-all shadow-md disabled:opacity-50"
+              >
+                {loading ? "..." : "إرسال"}
+              </button>
+            </form>
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };
