@@ -1,68 +1,167 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Coffee, Wifi, CreditCard } from "lucide-react";
+import { ShoppingCart, Coffee, Wifi } from "lucide-react";
+import { getProducts } from "@/api/products";
+import { createOrder } from "@/api/orders";
+import { toast } from "sonner";
 
-const groceryItems = [
-  { id: 1, name: "ماء معدني", price: 5, image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&q=80" },
-  { id: 2, name: "عصير طبيعي", price: 15, image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&q=80" },
-  { id: 3, name: "شوكولاتة", price: 20, image: "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&q=80" },
-  { id: 4, name: "بسكويت", price: 10, image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80" },
-];
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  description?: string;
+}
 
-const coffeeItems = [
-  { id: 1, name: "قهوة عربية", price: 25, image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&q=80", description: "قهوة عربية أصيلة بنكهة الهيل" },
-  { id: 2, name: "قهوة تركية", price: 30, image: "https://images.unsplash.com/photo-1610889556528-9a770e32642f?w=400&q=80", description: "قهوة تركية مُحضرة بطريقة تقليدية" },
-  { id: 3, name: "كابتشينو", price: 35, image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80", description: "كابتشينو كريمي مع رغوة الحليب" },
-  { id: 4, name: "لاتيه", price: 35, image: "https://images.unsplash.com/photo-1561882468-9110e03e0f78?w=400&q=80", description: "لاتيه ناعم بالحليب الطازج" },
-  { id: 5, name: "إسبريسو", price: 20, image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80", description: "إسبريسو إيطالي قوي ومركز" },
-  { id: 6, name: "موكا", price: 40, image: "https://images.unsplash.com/photo-1578373606682-42ba395d6da1?w=400&q=80", description: "موكا بالشوكولاتة الغنية" },
-];
+interface CartItem {
+  product: Product;
+  quantity: number;
+}
 
-const qatItems = [
-  { id: 1, name: "قات يمني ممتاز", price: 150, image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&q=80" },
-  { id: 2, name: "قات درجة أولى", price: 120, image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&q=80" },
-];
+// ✅ بطاقة المنتج مع التحكم في الكمية وزر إضافة للسلة
+const ServiceCard = ({
+  item,
+  addToCart,
+}: {
+  item: Product;
+  addToCart: (product: Product, quantity: number) => void;
+}) => {
+  const [quantity, setQuantity] = useState(1);
 
-const shishaItems = [
-  { id: 1, name: "شيشة تفاح", price: 50, image: "https://images.unsplash.com/photo-1599485146935-ee8eb35e6ad5?w=400&q=80" },
-  { id: 2, name: "شيشة نعناع", price: 50, image: "https://images.unsplash.com/photo-1599485146935-ee8eb35e6ad5?w=400&q=80" },
-  { id: 3, name: "شيشة توت", price: 55, image: "https://images.unsplash.com/photo-1599485146935-ee8eb35e6ad5?w=400&q=80" },
-];
+  return (
+    <Card className="overflow-hidden hover-lift card-gradient border-2">
+      <div className="h-48 overflow-hidden">
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+        />
+      </div>
+      <CardHeader>
+        <CardTitle>{item.name}</CardTitle>
+        {item.description && (
+          <CardDescription className="text-sm mt-1">{item.description}</CardDescription>
+        )}
+        <CardDescription className="text-2xl font-bold text-primary mt-2">
+          {item.price} ريال
+        </CardDescription>
 
-const networkCards = [
-  { id: 1, name: "كرت 50 جيجا", price: 50, image: "https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=400&q=80" },
-  { id: 2, name: "كرت 100 جيجا", price: 90, image: "https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=400&q=80" },
-  { id: 3, name: "كرت مفتوح 24 ساعة", price: 40, image: "https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=400&q=80" },
-];
-
-const ServiceCard = ({ item }: { item: any }) => (
-  <Card className="overflow-hidden hover-lift card-gradient border-2">
-    <div className="h-48 overflow-hidden">
-      <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
-    </div>
-    <CardHeader>
-      <CardTitle>{item.name}</CardTitle>
-      {item.description && (
-        <CardDescription className="text-sm mt-1">{item.description}</CardDescription>
-      )}
-      <CardDescription className="text-2xl font-bold text-primary mt-2">{item.price} ريال</CardDescription>
-    </CardHeader>
-    <CardFooter>
-      <Button className="w-full shadow-elegant">اطلب الآن</Button>
-    </CardFooter>
-  </Card>
-);
+        {/* حقل تحديد الكمية */}
+        <div className="flex items-center mt-2 gap-2">
+          <Button size="sm" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+            -
+          </Button>
+          <input
+            type="number"
+            className="w-12 text-center border rounded"
+            value={quantity}
+            min={1}
+            onChange={e => setQuantity(Number(e.target.value))}
+          />
+          <Button size="sm" onClick={() => setQuantity(q => q + 1)}>
+            +
+          </Button>
+        </div>
+      </CardHeader>
+      <CardFooter>
+        <Button onClick={() => addToCart(item, quantity)} className="w-full shadow-elegant">
+          أضف إلى السلة
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
 
 const Services = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await getProducts();
+        console.log("Products data:", response.data);
+        const productList = Array.isArray(response.data)
+          ? response.data
+          : response.data.data || [];
+        setProducts(productList);
+      } catch (error) {
+        console.error("حدث خطأ أثناء جلب المنتجات:", error);
+        toast.error("تعذر تحميل المنتجات ❌");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // ✅ إضافة منتج للسلة
+  const addToCart = (product: Product, quantity: number) => {
+    setCart(prev => {
+      const existing = prev.find(p => p.product.id === product.id);
+      if (existing) {
+        existing.quantity += quantity;
+        return [...prev];
+      }
+      return [...prev, { product, quantity }];
+    });
+    toast.success(`${product.name} أضيف إلى السلة ✅`);
+  };
+
+  // ✅ إنشاء الطلب لجميع منتجات السلة
+  const handleCreateOrder = async () => {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) return toast.error("يرجى تسجيل الدخول أولاً.");
+    if (cart.length === 0) return toast.error("السلة فارغة!");
+
+    const productsData = cart.map(p => ({ id: p.product.id, quantity: p.quantity }));
+    const total = cart.reduce((sum, p) => sum + p.product.price * p.quantity, 0);
+
+    try {
+      const response = await createOrder({ user_id: Number(userId), products: productsData, total });
+      toast.success("تم إنشاء الطلب بنجاح ✅");
+      setCart([]); // تفريغ السلة بعد الطلب
+      console.log("Order created:", response);
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        const messages = Object.values(error.response.data.errors).flat().join(", ");
+        toast.error("فشل إنشاء الطلب: " + messages);
+      } else {
+        toast.error("فشل إنشاء الطلب 😢");
+      }
+    }
+  };
+
+  const filterByCategory = (category: string) => {
+    if (!Array.isArray(products)) return [];
+    return products.filter(p => p.category === category);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-xl font-bold">
+        جاري تحميل المنتجات...
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="pt-16">
-        {/* Page Header */}
         <section className="bg-gradient-to-b from-primary/10 to-background py-20 px-4">
           <div className="container mx-auto text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold">خدماتنا المتميزة</h1>
@@ -72,92 +171,66 @@ const Services = () => {
           </div>
         </section>
 
-        {/* Services Tabs */}
         <section className="py-12 px-4">
           <div className="container mx-auto">
-            <Tabs defaultValue="grocery" className="w-full" dir="rtl">
+            <Tabs defaultValue="بقالة" className="w-full" dir="rtl">
               <TabsList className="grid w-full grid-cols-5 mb-8 h-auto">
-                <TabsTrigger value="grocery" className="gap-2 py-3">
+                <TabsTrigger value="بقالة" className="gap-2 py-3">
                   <ShoppingCart className="h-5 w-5" />
-                  <span className="hidden sm:inline">البقالة</span>
+                  <span>البقالة</span>
                 </TabsTrigger>
-                <TabsTrigger value="coffee" className="gap-2 py-3">
+                <TabsTrigger value="قهوة" className="gap-2 py-3">
                   <Coffee className="h-5 w-5" />
-                  <span className="hidden sm:inline">القهوة</span>
+                  <span>القهوة</span>
                 </TabsTrigger>
-                <TabsTrigger value="qat" className="gap-2 py-3">
+                <TabsTrigger value="قات" className="gap-2 py-3">
                   <Coffee className="h-5 w-5" />
-                  <span className="hidden sm:inline">القات</span>
+                  <span>القات</span>
                 </TabsTrigger>
-                <TabsTrigger value="shisha" className="gap-2 py-3">
+                <TabsTrigger value="شيشة" className="gap-2 py-3">
                   <Coffee className="h-5 w-5" />
-                  <span className="hidden sm:inline">الشيشة</span>
+                  <span>الشيشة</span>
                 </TabsTrigger>
-                <TabsTrigger value="network" className="gap-2 py-3">
+                <TabsTrigger value="كروت" className="gap-2 py-3">
                   <Wifi className="h-5 w-5" />
-                  <span className="hidden sm:inline">كروت الشبكة</span>
+                  <span>كروت الشبكة</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="grocery" className="animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {groceryItems.map((item, index) => (
-                    <div key={item.id} className="animate-scale-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                      <ServiceCard item={item} />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="coffee" className="animate-fade-in">
-                <div className="mb-6 p-6 bg-card rounded-lg border">
-                  <h3 className="text-2xl font-bold mb-2">قسم القهوة المتميز</h3>
-                  <p className="text-muted-foreground">
-                    نقدم لكم مجموعة متنوعة من أنواع القهوة المحضرة بعناية فائقة، من القهوة العربية الأصيلة إلى المشروبات الإيطالية الفاخرة. 
-                    جميع مشروباتنا تُحضر بحبوب قهوة طازجة ومختارة بعناية لضمان أفضل تجربة.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {coffeeItems.map((item, index) => (
-                    <div key={item.id} className="animate-scale-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                      <ServiceCard item={item} />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="qat" className="animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {qatItems.map((item, index) => (
-                    <div key={item.id} className="animate-scale-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                      <ServiceCard item={item} />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="shisha" className="animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {shishaItems.map((item, index) => (
-                    <div key={item.id} className="animate-scale-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                      <ServiceCard item={item} />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="network" className="animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {networkCards.map((item, index) => (
-                    <div key={item.id} className="animate-scale-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                      <ServiceCard item={item} />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
+              {["بقالة", "قهوة", "قات", "شيشة", "كروت"].map(category => (
+                <TabsContent key={category} value={category} className="animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {filterByCategory(category).map((item, index) => (
+                      <div
+                        key={item.id}
+                        className="animate-scale-in"
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        <ServiceCard item={item} addToCart={addToCart} />
+                      </div>
+                    ))}
+                    {filterByCategory(category).length === 0 && (
+                      <p className="text-center col-span-full text-muted-foreground">
+                        لا توجد منتجات في هذا القسم حالياً.
+                      </p>
+                    )}
+                  </div>
+                </TabsContent>
+              ))}
             </Tabs>
           </div>
         </section>
+
+        {/* زر إنشاء الطلب من السلة */}
+        {cart.length > 0 && (
+          <div className="fixed bottom-4 right-4 bg-white border p-4 rounded shadow-lg z-50">
+            <p className="mb-2 font-bold">السلة: {cart.length} منتجات</p>
+            <p className="mb-2">المجموع: {cart.reduce((sum, p) => sum + p.product.price * p.quantity, 0)} ريال</p>
+            <Button onClick={handleCreateOrder} className="w-full">
+              إنشاء الطلب
+            </Button>
+          </div>
+        )}
       </main>
       <Footer />
     </div>
