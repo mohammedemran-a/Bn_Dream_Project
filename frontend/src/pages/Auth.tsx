@@ -64,7 +64,6 @@ const Auth = () => {
         email: registerData.email,
         phone: registerData.phone,
         password: registerData.password,
-        password_confirmation: registerData.password,
       });
 
       console.log("Register response:", response.data);
