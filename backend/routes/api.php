@@ -8,6 +8,13 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\SettingController;
+
+// مسار لجلب الإعدادات
+Route::get('/settings', [SettingController::class, 'index']);
+
+// مسار لحفظ الإعدادات
+Route::post('/settings', [SettingController::class, 'update']);
 
 
 Route::apiResource('rooms', RoomController::class);

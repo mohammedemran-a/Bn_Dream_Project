@@ -1,13 +1,38 @@
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Home, DoorOpen, Briefcase, Trophy, Phone, User, Bot, Settings } from "lucide-react";
-import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { getSettings } from "@/api/settings.js";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
+  // حالة لتخزين إعدادات الموقع
+  const [siteSettings, setSiteSettings] = useState({
+    siteName: "نظام استراحة بي إن إيدريم", // قيمة افتراضية
+    logo: "",
+  });
+
+  // جلب الإعدادات عند تحميل المكون
+  useEffect(() => {
+    getSettings()
+      .then(response => {
+        if (response.data) {
+          setSiteSettings(prev => ({
+            ...prev,
+            siteName: response.data.siteName || prev.siteName,
+            logo: response.data.logo || prev.logo,
+          }));
+        }
+      })
+      .catch(error => {
+        console.error("Failed to fetch site settings for Navbar:", error);
+      });
+  }, []);
+
+  // قائمة الروابط (لم تتغير)
   const navLinks = [
     { name: "الرئيسية", path: "/", icon: Home },
     { name: "الغرف", path: "/rooms", icon: DoorOpen },
@@ -23,17 +48,22 @@ const Navbar = () => {
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* --- الجزء الذي تم تعديله --- */}
           <Link to="/" className="flex items-center gap-2 animate-fade-in-right">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
-              <span className="text-primary-foreground font-bold text-xl">ا</span>
-            </div>
+            {siteSettings.logo ? (
+              <img src={siteSettings.logo} alt="Site Logo" className="w-10 h-10 rounded-full object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
+                <span className="text-primary-foreground font-bold text-xl">ا</span>
+              </div>
+            )}
             <span className="text-xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-              نظام استراحة بي إن إيدريم
+              {siteSettings.siteName}
             </span>
           </Link>
+          {/* --- نهاية الجزء المعدل --- */}
 
-          {/* Desktop Navigation */}
+          {/* --- الأجزاء التي لم تتغير (روابط الصفحات) --- */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link, index) => (
               <Link
@@ -63,7 +93,7 @@ const Navbar = () => {
             <ThemeToggle />
           </div>
 
-          {/* Auth Button */}
+          {/* --- الأجزاء التي لم تتغير (زر تسجيل الدخول) --- */}
           <div className="hidden md:block animate-fade-in-left">
             <Link to="/auth">
               <Button className="gap-2 shadow-elegant">
@@ -73,7 +103,7 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Mobile Menu Button & Theme Toggle */}
+          {/* --- الأجزاء التي لم تتغير (قائمة الموبايل) --- */}
           <div className="md:hidden flex items-center gap-2">
             <ThemeToggle />
             <button
@@ -85,7 +115,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* --- الأجزاء التي لم تتغير (قائمة الموبايل المفتوحة) --- */}
         {isOpen && (
           <div className="md:hidden py-4 animate-slide-up">
             <div className="flex flex-col gap-2">

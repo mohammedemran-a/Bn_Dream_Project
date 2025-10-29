@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ لإدارة الانتقال بين الصفحات
-import { login, register } from "@/api/auth"; // 👈 دوال Laravel API
+import { useNavigate } from "react-router-dom";
+import { login, register } from "@/api/auth";
+import { toast } from "sonner"; // ✅ لإشعارات النجاح/الخطأ
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Auth = () => {
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
-    phone: "", // ✅ أضفنا حقل الهاتف هنا
+    phone: "",
     password: "",
   });
 
@@ -29,13 +30,28 @@ const Auth = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await login({
+      const response = await login({
         email: loginData.email,
         password: loginData.password,
       });
+
+      console.log("Login response:", response.data);
+
+      // ✅ حفظ user_id
+      if (response.data.user && response.data.user.id) {
+        localStorage.setItem("user_id", response.data.user.id);
+      }
+
+      // ✅ حفظ التوكن إن وجد
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      toast.success("تم تسجيل الدخول بنجاح ✅");
       navigate("/"); // ✅ الانتقال بعد تسجيل الدخول
     } catch (error) {
-      console.error(error);
+      console.error("Login error:", error);
+      toast.error("فشل تسجيل الدخول ❌");
     }
   };
 
@@ -43,16 +59,31 @@ const Auth = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await register({
+      const response = await register({
         name: registerData.name,
         email: registerData.email,
-        phone: registerData.phone, // ✅ نرسل الهاتف إلى الـ API
+        phone: registerData.phone,
         password: registerData.password,
         password_confirmation: registerData.password,
       });
+
+      console.log("Register response:", response.data);
+
+      // ✅ حفظ user_id بعد التسجيل
+      if (response.data.user && response.data.user.id) {
+        localStorage.setItem("user_id", response.data.user.id);
+      }
+
+      // ✅ حفظ التوكن إن وجد
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      toast.success("تم إنشاء الحساب بنجاح ✅");
       navigate("/"); // ✅ الانتقال بعد التسجيل
     } catch (error) {
-      console.error(error);
+      console.error("Register error:", error);
+      toast.error("فشل إنشاء الحساب ❌");
     }
   };
 
@@ -174,7 +205,6 @@ const Auth = () => {
                       />
                     </div>
 
-                    {/* ✅ حقل الهاتف الجديد */}
                     <div>
                       <label className="block text-sm font-medium mb-2">
                         رقم الهاتف
