@@ -15,35 +15,60 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, Calendar, Tv } from "lucide-react";
 import { getMatches } from "@/api/football_matches";
+import {
+  postPrediction,
+  getUserPredictions,
+  getLeaderboard,
+} from "@/api/predictions";
 
 const Matches = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [predictions, setPredictions] = useState<{
-    [key: number]: { team1: string; team2: string };
-  }>({});
+  const [predictions, setPredictions] = useState({});
+  const [userId, setUserId] = useState<number | null>(null);
+  const [leaderboard, setLeaderboard] = useState([]);
 
-  // 🟢 جلب المباريات من الـ API عند تحميل الصفحة
+  // 🧩 تحميل user_id من localStorage
   useEffect(() => {
-    const fetchMatches = async () => {
+    const storedUserId = localStorage.getItem("user_id");
+    if (storedUserId) setUserId(Number(storedUserId));
+  }, []);
+
+  // 🟢 جلب المباريات + توقعات المستخدم + المتصدرين
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         const response = await getMatches();
         setMatches(response.data);
+
+        // جلب توقعات المستخدم
+        if (userId) {
+          const userPreds = await getUserPredictions(userId);
+          const formatted = {};
+          userPreds.data.forEach((p) => {
+            formatted[p.football_match_id] = {
+              team1: p.team1_score.toString(),
+              team2: p.team2_score.toString(),
+            };
+          });
+          setPredictions(formatted);
+        }
+
+        // جلب المتصدرين
+        const leaders = await getLeaderboard();
+        setLeaderboard(leaders.data);
       } catch (error) {
-        console.error("❌ خطأ أثناء جلب المباريات:", error);
+        console.error("❌ خطأ أثناء جلب البيانات:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMatches();
-  }, []);
+    fetchData();
+  }, [userId]);
 
-  const handlePredictionChange = (
-    matchId: number,
-    team: "team1" | "team2",
-    value: string
-  ) => {
+  // ⚙️ تغيير القيم في التوقعات
+  const handlePredictionChange = (matchId, team, value) => {
     setPredictions((prev) => ({
       ...prev,
       [matchId]: {
@@ -53,13 +78,30 @@ const Matches = () => {
     }));
   };
 
-  const handleSubmitPrediction = (matchId: number) => {
+  // 🟢 إرسال التوقع
+  const handleSubmitPrediction = async (matchId) => {
+    if (!userId) {
+      alert("الرجاء تسجيل الدخول أولاً");
+      return;
+    }
+
     const prediction = predictions[matchId];
     if (prediction?.team1 && prediction?.team2) {
-      console.log(`Prediction for match ${matchId}:`, prediction);
-      alert("تم إرسال توقعك بنجاح!");
+      try {
+        await postPrediction({
+          user_id: userId,
+          football_match_id: matchId,
+          team1_score: Number(prediction.team1),
+          team2_score: Number(prediction.team2),
+        });
+
+        alert("✅ تم إرسال توقعك بنجاح!");
+      } catch (error) {
+        console.error("❌ خطأ أثناء إرسال التوقع:", error);
+        alert(error.response?.data?.message || "حدث خطأ أثناء إرسال التوقع");
+      }
     } else {
-      alert("الرجاء إدخال النتيجة كاملة");
+      alert("⚠️ الرجاء إدخال النتيجة كاملة");
     }
   };
 
@@ -199,53 +241,56 @@ const Matches = () => {
           </div>
         </section>
 
-        {/* Leaderboard Section */}
+        {/* 🏆 Leaderboard Section */}
         <section className="py-12 px-4 bg-muted/30">
           <div className="container mx-auto">
             <div className="text-center mb-8 animate-fade-in">
               <h2 className="text-3xl font-bold mb-2">جدول المتصدرين</h2>
-              <p className="text-muted-foreground">أفضل المتوقعين هذا الأسبوع</p>
+              <p className="text-muted-foreground">
+                أفضل المتوقعين هذا الأسبوع
+              </p>
             </div>
 
             <Card className="max-w-2xl mx-auto card-gradient animate-scale-in">
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((rank) => (
-                    <div
-                      key={rank}
-                      className="flex items-center justify-between p-4 rounded-lg bg-background/50 hover-lift"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                            rank === 1
-                              ? "bg-yellow-500 text-white"
-                              : rank === 2
-                              ? "bg-gray-400 text-white"
-                              : rank === 3
-                              ? "bg-orange-600 text-white"
-                              : "bg-muted"
-                          }`}
-                        >
-                          {rank}
-                        </div>
-                        <div>
-                          <p className="font-semibold">متوقع {rank}</p>
-                          <p className="text-sm text-muted-foreground">
-                            عضو منذ 2024
-                          </p>
+                {leaderboard.length === 0 ? (
+                  <p className="text-center text-muted-foreground">
+                    لا يوجد متصدرين حالياً.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {leaderboard.map((item, index) => (
+                      <div
+                        key={item.user_id}
+                        className="flex items-center justify-between p-4 rounded-lg bg-background/50 hover-lift"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                              index === 0
+                                ? "bg-yellow-500 text-white"
+                                : index === 1
+                                ? "bg-gray-400 text-white"
+                                : index === 2
+                                ? "bg-orange-600 text-white"
+                                : "bg-muted"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-semibold">
+                              {item.user?.name || "مستخدم غير معروف"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              مجموع النقاط: {item.total_points}
+                            </p>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="text-left">
-                        <p className="font-bold text-primary">{15 - rank} نقطة</p>
-                        <p className="text-sm text-muted-foreground">
-                          {20 - rank} توقع صحيح
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

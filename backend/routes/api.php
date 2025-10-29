@@ -9,8 +9,12 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\PredictionController;
 
-// مسار لجلب الإعدادات
+Route::post('/predictions', [PredictionController::class, 'store']);
+Route::get('/predictions/user/{user_id}', [PredictionController::class, 'getUserPredictions']);
+Route::get('/predictions/leaderboard', [PredictionController::class, 'leaderboard']);
+
 Route::get('/settings', [SettingController::class, 'index']);
 
 // مسار لحفظ الإعدادات
