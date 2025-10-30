@@ -42,6 +42,7 @@ const recentOrders = [
 
 const Dashboard = () => {
   return (
+    
     <AdminLayout>
       <div className="space-y-8 animate-fade-in">
         <div>

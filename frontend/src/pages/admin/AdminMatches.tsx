@@ -210,17 +210,17 @@ const AdminMatches = () => {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="result">النتيجة</Label>
-                  <Input
-                    id="result"
-                    value={formData.result}
-                    onChange={(e) =>
-                      setFormData({ ...formData, result: e.target.value })
-                    }
-                  />
-                </div>
-
+             <div>
+              <Label htmlFor="result">النتيجة</Label>
+              <Input
+                id="result"
+                placeholder="نتيجة الفريق الأول - نتيجة الفريق الثاني (مثال: 2-1)"
+                value={formData.result}
+                onChange={(e) =>
+                  setFormData({ ...formData, result: e.target.value })
+                }
+              />
+            </div>
                 <div>
                   <Label htmlFor="status">الحالة</Label>
                   <select

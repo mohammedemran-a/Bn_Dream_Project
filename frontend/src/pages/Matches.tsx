@@ -49,6 +49,7 @@ const Matches = () => {
             formatted[p.football_match_id] = {
               team1: p.team1_score.toString(),
               team2: p.team2_score.toString(),
+              submitted: true, // 🔒 تم إرسال التوقع مسبقًا
             };
           });
           setPredictions(formatted);
@@ -69,6 +70,8 @@ const Matches = () => {
 
   // ⚙️ تغيير القيم في التوقعات
   const handlePredictionChange = (matchId, team, value) => {
+    if (predictions[matchId]?.submitted) return; // 🔒 لا يمكن التعديل بعد الإرسال
+
     setPredictions((prev) => ({
       ...prev,
       [matchId]: {
@@ -96,6 +99,11 @@ const Matches = () => {
         });
 
         alert("✅ تم إرسال توقعك بنجاح!");
+        // 🔒 قفل التوقع بعد الإرسال
+        setPredictions((prev) => ({
+          ...prev,
+          [matchId]: { ...prev[matchId], submitted: true },
+        }));
       } catch (error) {
         console.error("❌ خطأ أثناء إرسال التوقع:", error);
         alert(error.response?.data?.message || "حدث خطأ أثناء إرسال التوقع");
@@ -143,99 +151,109 @@ const Matches = () => {
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {matches.map((match, index) => (
-                  <Card
-                    key={match.id}
-                    className="hover-lift card-gradient border-2 animate-scale-in"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge>{match.status || "قادمة"}</Badge>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Tv className="h-4 w-4" />
-                          {match.channel || "غير محددة"}
-                        </div>
-                      </div>
+                {matches.map((match, index) => {
+                  const userPred = predictions[match.id] || {};
+                  const isSubmitted = userPred.submitted;
 
-                      <CardTitle className="text-center text-2xl">
-                        {match.team1}
-                        <span className="text-primary mx-3">VS</span>
-                        {match.team2}
-                      </CardTitle>
-
-                      <CardDescription className="text-center space-y-1">
-                        <div className="flex items-center justify-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>{match.date}</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          <span>{match.time}</span>
-                        </div>
-                      </CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-                        <h4 className="font-semibold text-center mb-3">
-                          توقع النتيجة
-                        </h4>
-
-                        <div className="flex items-center gap-3 justify-center">
-                          <div className="text-center">
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {match.team1}
-                            </p>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              min="0"
-                              className="w-16 text-center text-xl font-bold"
-                              value={predictions[match.id]?.team1 || ""}
-                              onChange={(e) =>
-                                handlePredictionChange(
-                                  match.id,
-                                  "team1",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
-
-                          <div className="text-2xl font-bold text-primary">-</div>
-
-                          <div className="text-center">
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {match.team2}
-                            </p>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              min="0"
-                              className="w-16 text-center text-xl font-bold"
-                              value={predictions[match.id]?.team2 || ""}
-                              onChange={(e) =>
-                                handlePredictionChange(
-                                  match.id,
-                                  "team2",
-                                  e.target.value
-                                )
-                              }
-                            />
+                  return (
+                    <Card
+                      key={match.id}
+                      className="hover-lift card-gradient border-2 animate-scale-in"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <CardHeader>
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge>{match.status || "قادمة"}</Badge>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Tv className="h-4 w-4" />
+                            {match.channel || "غير محددة"}
                           </div>
                         </div>
 
-                        <Button
-                          className="w-full mt-3 shadow-elegant"
-                          onClick={() => handleSubmitPrediction(match.id)}
-                        >
-                          إرسال التوقع
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <CardTitle className="text-center text-2xl">
+                          {match.team1}
+                          <span className="text-primary mx-3">VS</span>
+                          {match.team2}
+                        </CardTitle>
+
+                        <CardDescription className="text-center space-y-1">
+                          <div className="flex items-center justify-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>{match.date}</span>
+                          </div>
+                          <div className="flex items-center justify-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span>{match.time}</span>
+                          </div>
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                          <h4 className="font-semibold text-center mb-3">
+                            توقع النتيجة
+                          </h4>
+
+                          <div className="flex items-center gap-3 justify-center">
+                            <div className="text-center">
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {match.team1}
+                              </p>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                min="0"
+                                className="w-16 text-center text-xl font-bold"
+                                value={userPred.team1 || ""}
+                                onChange={(e) =>
+                                  handlePredictionChange(
+                                    match.id,
+                                    "team1",
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isSubmitted}
+                              />
+                            </div>
+
+                            <div className="text-2xl font-bold text-primary">
+                              -
+                            </div>
+
+                            <div className="text-center">
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {match.team2}
+                              </p>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                min="0"
+                                className="w-16 text-center text-xl font-bold"
+                                value={userPred.team2 || ""}
+                                onChange={(e) =>
+                                  handlePredictionChange(
+                                    match.id,
+                                    "team2",
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isSubmitted}
+                              />
+                            </div>
+                          </div>
+
+                          <Button
+                            className="w-full mt-3 shadow-elegant"
+                            onClick={() => handleSubmitPrediction(match.id)}
+                            disabled={isSubmitted}
+                          >
+                            {isSubmitted ? "✅ تم الإرسال" : "إرسال التوقع"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -246,9 +264,7 @@ const Matches = () => {
           <div className="container mx-auto">
             <div className="text-center mb-8 animate-fade-in">
               <h2 className="text-3xl font-bold mb-2">جدول المتصدرين</h2>
-              <p className="text-muted-foreground">
-                أفضل المتوقعين هذا الأسبوع
-              </p>
+              <p className="text-muted-foreground">أفضل المتوقعين</p>
             </div>
 
             <Card className="max-w-2xl mx-auto card-gradient animate-scale-in">
