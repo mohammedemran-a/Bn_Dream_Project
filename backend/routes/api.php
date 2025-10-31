@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\PredictionController;
+use App\Http\Controllers\Api\ContactController;
 
 Route::post('/predictions', [PredictionController::class, 'store']);
 Route::get('/predictions/user/{user_id}', [PredictionController::class, 'getUserPredictions']);
@@ -52,3 +53,9 @@ Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
 
 
+
+// ✅ إرسال رسالة جديدة من نموذج التواصل
+Route::post('/contact', [ContactController::class, 'store']);
+
+// ✅ عرض جميع الرسائل (اختياري)
+Route::get('/contact', [ContactController::class, 'index']);

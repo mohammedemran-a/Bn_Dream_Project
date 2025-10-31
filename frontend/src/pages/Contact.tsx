@@ -1,11 +1,18 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Send } from "lucide-react";
 import { useState } from "react";
+import { sendContactMessage } from "@/api/contacts"; // ✅ استدعاء دالة API
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -15,11 +22,25 @@ const Contact = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    alert("تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
-    setFormData({ name: "", email: "", phone: "", message: "" });
+    setLoading(true);
+
+    try {
+      // إرسال البيانات إلى API
+      const response = await sendContactMessage(formData);
+      console.log("Server response:", response.data);
+
+      alert("✅ تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
+      setFormData({ name: "", email: "", phone: "", message: "" });
+    } catch (error) {
+      console.error("❌ خطأ أثناء إرسال الرسالة:", error.response?.data || error.message);
+      alert("حدث خطأ أثناء الإرسال، حاول مجدداً.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,47 +72,71 @@ const Contact = () => {
                   <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">الاسم الكامل</label>
+                        <label className="block text-sm font-medium mb-2">
+                          الاسم الكامل
+                        </label>
                         <Input
                           placeholder="أدخل اسمك"
                           value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
+                        <label className="block text-sm font-medium mb-2">
+                          البريد الإلكتروني
+                        </label>
                         <Input
                           type="email"
                           placeholder="example@email.com"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
+                        <label className="block text-sm font-medium mb-2">
+                          رقم الهاتف
+                        </label>
                         <Input
                           type="tel"
                           placeholder="+967 777 123 456"
                           value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">رسالتك</label>
+                        <label className="block text-sm font-medium mb-2">
+                          رسالتك
+                        </label>
                         <Textarea
                           placeholder="اكتب رسالتك هنا..."
                           rows={5}
                           value={formData.message}
-                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, message: e.target.value })
+                          }
                           required
                         />
                       </div>
-                      <Button type="submit" className="w-full shadow-elegant gap-2">
-                        <Send className="h-4 w-4" />
-                        إرسال الرسالة
+                      <Button
+                        type="submit"
+                        className="w-full shadow-elegant gap-2"
+                        disabled={loading}
+                      >
+                        {loading ? "جارٍ الإرسال..." : (
+                          <>
+                            <Send className="h-4 w-4" />
+                            إرسال الرسالة
+                          </>
+                        )}
                       </Button>
                     </form>
                   </CardContent>
