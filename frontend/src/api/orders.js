@@ -1,27 +1,33 @@
-import axios from "axios";
+import axios from "./axios";
 
-const API_URL = "http://127.0.0.1:8000/api/orders";
+const API_URL = "/api/orders";
 
-// ✅ جلب كل الطلبات
+// جلب كل الطلبات
 export const getAllOrders = async () => {
   const response = await axios.get(API_URL);
-  return response.data.data || response.data;
+  return response.data?.data || response.data || [];
 };
 
-// ✅ إنشاء طلب جديد
+// إنشاء طلب جديد
 export const createOrder = async (orderData) => {
   const response = await axios.post(API_URL, orderData);
-  return response.data;
+  return response.data || {};
 };
 
-// ✅ تحديث حالة الطلب
+// تحديث حالة الطلب
 export const updateOrderStatus = async (id, status) => {
   const response = await axios.put(`${API_URL}/${id}/status`, { status });
-  return response.data;
+  return response.data || {};
 };
 
-// ✅ جلب طلب واحد
-export const getOrder = (id) => axios.get(`${API_URL}/${id}`);
+// جلب طلب واحد
+export const getOrder = async (id) => {
+  const response = await axios.get(`${API_URL}/${id}`);
+  return response.data || {};
+};
 
-// ✅ حذف الطلب
-export const deleteOrder = (id) => axios.delete(`${API_URL}/${id}`);
+// حذف طلب
+export const deleteOrder = async (id) => {
+  const response = await axios.delete(`${API_URL}/${id}`);
+  return response.data || {};
+};

@@ -13,12 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         //
-          $middleware->web(append: [
-        \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-    ]);
-       // $middleware->global(\Illuminate\Http\Middleware\HandleCors::class);
+        $middleware->web(append: [
+            // أمثلة إن أردت إضافة شيء مثل:
+            // \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
+        
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+
 

@@ -1,48 +1,72 @@
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BedDouble, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from "recharts";
-
-const statsData = [
-  { icon: BedDouble, label: "إجمالي الحجوزات", value: "156", change: "+12%" },
-  { icon: Users, label: "عدد المستخدمين", value: "89", change: "+8%" },
-  { icon: ShoppingCart, label: "الطلبات", value: "234", change: "+23%" },
-  { icon: DollarSign, label: "الإيرادات", value: "45,230 ريال", change: "+15%" },
-];
-
-const chartData = [
-  { name: "السبت", bookings: 12 },
-  { name: "الأحد", bookings: 19 },
-  { name: "الاثنين", bookings: 15 },
-  { name: "الثلاثاء", bookings: 22 },
-  { name: "الأربعاء", bookings: 18 },
-  { name: "الخميس", bookings: 25 },
-  { name: "الجمعة", bookings: 28 },
-];
-
-const recentBookings = [
-  { id: 1, user: "أحمد محمد", room: "جناح VIP", date: "2025-10-25", status: "مؤكد" },
-  { id: 2, user: "سارة علي", room: "غرفة عائلية", date: "2025-10-24", status: "قيد المراجعة" },
-  { id: 3, user: "محمد خالد", room: "غرفة ديلوكس", date: "2025-10-23", status: "مؤكد" },
-];
-
-const recentOrders = [
-  { id: 1, user: "فاطمة أحمد", type: "بقالة", amount: "150 ريال", status: "قيد التنفيذ" },
-  { id: 2, user: "عمر سعيد", type: "شيش", amount: "80 ريال", status: "تم التسليم" },
-  { id: 3, user: "نورة محمد", type: "قات", amount: "200 ريال", status: "جديد" },
-];
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { getBookings } from "@/api/bookings";
+import { getAllOrders } from "@/api/orders";
+import { getUser } from "@/api/auth";
+import { toast } from "sonner";
 
 const Dashboard = () => {
+  const [bookings, setBookings] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [bookingsRes, ordersRes, userRes] = await Promise.all([
+          getBookings(),
+          getAllOrders(),
+          getUser(),
+        ]);
+
+        setBookings(bookingsRes?.data || []);
+        setOrders(ordersRes || []);
+        setUsers(userRes?.data ? [userRes.data] : []);
+        setLoading(false);
+      } catch (error) {
+        console.error("حدث خطأ أثناء تحميل البيانات:", error);
+        toast.error("فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا 🔐");
+        localStorage.removeItem("token");
+        window.location.href = "/auth";
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+
+  const statsData = [
+    { icon: BedDouble, label: "إجمالي الحجوزات", value: bookings.length, change: "+12%" },
+    { icon: Users, label: "عدد المستخدمين", value: users.length, change: "+8%" },
+    { icon: ShoppingCart, label: "عدد الطلبات", value: orders.length, change: "+23%" },
+    { icon: DollarSign, label: "إجمالي الإيرادات", value: `${totalRevenue} ريال`, change: "+15%" },
+  ];
+
+  const chartData = (() => {
+    const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+    const counts = {};
+    bookings.forEach((b) => {
+      const date = new Date(b.date || b.created_at);
+      const dayName = days[date.getDay()];
+      counts[dayName] = (counts[dayName] || 0) + 1;
+    });
+    return days.map((day) => ({ name: day, bookings: counts[day] || 0 }));
+  })();
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="p-10 text-center text-lg">⏳ جاري تحميل البيانات...</div>
+      </AdminLayout>
+    );
+  }
+
   return (
-    
     <AdminLayout>
       <div className="space-y-8 animate-fade-in">
         <div>
@@ -50,20 +74,13 @@ const Dashboard = () => {
           <p className="text-muted-foreground">نظرة عامة على نشاط النظام</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card 
-                key={index} 
-                className="hover:shadow-elegant transition-all duration-300 hover:scale-105 animate-scale-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+              <Card key={index} className="hover:shadow-elegant transition-all duration-300 hover:scale-105 animate-scale-in" style={{ animationDelay: `${index * 100}ms` }}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.label}
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
                   <Icon className="w-5 h-5 text-primary" />
                 </CardHeader>
                 <CardContent>
@@ -78,7 +95,6 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* Chart */}
         <Card className="animate-fade-in" style={{ animationDelay: "400ms" }}>
           <CardHeader>
             <CardTitle>الحجوزات اليومية</CardTitle>
@@ -89,83 +105,18 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
+                <Tooltip
+                  contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px"
+                    borderRadius: "8px",
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="bookings" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: "hsl(var(--primary))", r: 5 }}
-                />
+                <Line type="monotone" dataKey="bookings" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: "hsl(var(--primary))", r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Bookings */}
-          <Card className="animate-fade-in" style={{ animationDelay: "500ms" }}>
-            <CardHeader>
-              <CardTitle>آخر الحجوزات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentBookings.map((booking) => (
-                  <div 
-                    key={booking.id}
-                    className="flex items-center justify-between p-4 bg-accent/5 rounded-lg hover:bg-accent/10 transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium">{booking.user}</p>
-                      <p className="text-sm text-muted-foreground">{booking.room}</p>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm text-muted-foreground">{booking.date}</p>
-                      <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                        {booking.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Orders */}
-          <Card className="animate-fade-in" style={{ animationDelay: "600ms" }}>
-            <CardHeader>
-              <CardTitle>آخر الطلبات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div 
-                    key={order.id}
-                    className="flex items-center justify-between p-4 bg-accent/5 rounded-lg hover:bg-accent/10 transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium">{order.user}</p>
-                      <p className="text-sm text-muted-foreground">{order.type}</p>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium">{order.amount}</p>
-                      <span className="text-xs px-2 py-1 bg-secondary/10 text-secondary rounded-full">
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </AdminLayout>
   );

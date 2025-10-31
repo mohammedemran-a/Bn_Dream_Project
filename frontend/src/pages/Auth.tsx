@@ -13,7 +13,7 @@ import { LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, register } from "@/api/auth";
-import { toast } from "sonner"; // ✅ لإشعارات النجاح/الخطأ
+import { toast } from "sonner";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -26,62 +26,34 @@ const Auth = () => {
     password: "",
   });
 
-  // 🔐 تسجيل الدخول
+  // تسجيل الدخول
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await login({
-        email: loginData.email,
-        password: loginData.password,
-      });
+      const response = await login(loginData);
 
-      console.log("Login response:", response.data);
-
-      // ✅ حفظ user_id
-      if (response.data.user && response.data.user.id) {
-        localStorage.setItem("user_id", response.data.user.id);
-      }
-
-      // ✅ حفظ التوكن إن وجد
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-      }
+      if (!response.data) throw new Error("فشل تسجيل الدخول");
 
       toast.success("تم تسجيل الدخول بنجاح ✅");
-      navigate("/"); // ✅ الانتقال بعد تسجيل الدخول
+      navigate("/"); // الانتقال للوحة التحكم
     } catch (error) {
-      console.error("Login error:", error);
+      console.error(error);
       toast.error("فشل تسجيل الدخول ❌");
     }
   };
 
-  // 📝 إنشاء حساب جديد
+  // إنشاء حساب جديد
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      const response = await register({
-        name: registerData.name,
-        email: registerData.email,
-        phone: registerData.phone,
-        password: registerData.password,
-      });
+      const response = await register(registerData);
 
-      console.log("Register response:", response.data);
-
-      // ✅ حفظ user_id بعد التسجيل
-      if (response.data.user && response.data.user.id) {
-        localStorage.setItem("user_id", response.data.user.id);
-      }
-
-      // ✅ حفظ التوكن إن وجد
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-      }
+      if (!response.data) throw new Error("فشل إنشاء الحساب");
 
       toast.success("تم إنشاء الحساب بنجاح ✅");
-      navigate("/"); // ✅ الانتقال بعد التسجيل
+      navigate("/"); // الانتقال بعد التسجيل
     } catch (error) {
-      console.error("Register error:", error);
+      console.error(error);
       toast.error("فشل إنشاء الحساب ❌");
     }
   };
@@ -94,9 +66,7 @@ const Auth = () => {
           <Card className="card-gradient border-2 shadow-elegant animate-scale-in">
             <CardHeader className="text-center">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
-                <span className="text-primary-foreground font-bold text-2xl">
-                  ا
-                </span>
+                <span className="text-primary-foreground font-bold text-2xl">ا</span>
               </div>
               <CardTitle className="text-3xl">مرحباً بك</CardTitle>
               <CardDescription className="text-base">
@@ -117,128 +87,75 @@ const Auth = () => {
                   </TabsTrigger>
                 </TabsList>
 
-                {/* 🟢 تبويب تسجيل الدخول */}
+                {/* تبويب تسجيل الدخول */}
                 <TabsContent value="login">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">
-                        البريد الإلكتروني
-                      </label>
+                      <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
                       <Input
                         placeholder="example@email.com"
                         value={loginData.email}
-                        onChange={(e) =>
-                          setLoginData({ ...loginData, email: e.target.value })
-                        }
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                         required
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium mb-2">
-                        كلمة المرور
-                      </label>
+                      <label className="block text-sm font-medium mb-2">كلمة المرور</label>
                       <Input
                         type="password"
                         placeholder="••••••••"
                         value={loginData.password}
-                        onChange={(e) =>
-                          setLoginData({
-                            ...loginData,
-                            password: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                         required
                       />
                     </div>
-
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="px-0 text-primary"
-                    >
-                      نسيت كلمة المرور؟
-                    </Button>
-
                     <Button type="submit" className="w-full shadow-elegant">
                       تسجيل الدخول
                     </Button>
                   </form>
                 </TabsContent>
 
-                {/* 🟣 تبويب إنشاء حساب */}
+                {/* تبويب إنشاء حساب */}
                 <TabsContent value="register">
                   <form onSubmit={handleRegister} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">
-                        الاسم الكامل
-                      </label>
+                      <label className="block text-sm font-medium mb-2">الاسم الكامل</label>
                       <Input
                         placeholder="أدخل اسمك"
                         value={registerData.name}
-                        onChange={(e) =>
-                          setRegisterData({
-                            ...registerData,
-                            name: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
                         required
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium mb-2">
-                        البريد الإلكتروني
-                      </label>
+                      <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
                       <Input
                         type="email"
                         placeholder="example@email.com"
                         value={registerData.email}
-                        onChange={(e) =>
-                          setRegisterData({
-                            ...registerData,
-                            email: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                         required
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium mb-2">
-                        رقم الهاتف
-                      </label>
+                      <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
                       <Input
                         type="tel"
                         placeholder="05xxxxxxxx"
                         value={registerData.phone}
-                        onChange={(e) =>
-                          setRegisterData({
-                            ...registerData,
-                            phone: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium mb-2">
-                        كلمة المرور
-                      </label>
+                      <label className="block text-sm font-medium mb-2">كلمة المرور</label>
                       <Input
                         type="password"
                         placeholder="••••••••"
                         value={registerData.password}
-                        onChange={(e) =>
-                          setRegisterData({
-                            ...registerData,
-                            password: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                         required
                       />
                     </div>
-
                     <Button type="submit" className="w-full shadow-elegant">
                       إنشاء حساب
                     </Button>

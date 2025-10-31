@@ -1,9 +1,27 @@
-import axios from "axios";
+import axios from "./axios";
 
-const API_URL = "http://127.0.0.1:8000/api/bookings";
+const API_URL = "/api/bookings";
 
-export const getBookings = () => axios.get(API_URL);
-export const createBooking = (formData) => axios.post(API_URL, formData);
-export const updateBooking = (id, formData) =>
-  axios.put(`${API_URL}/${id}`, formData);
-export const deleteBooking = (id) => axios.delete(`${API_URL}/${id}`);
+// جلب كل الحجوزات
+export const getBookings = async () => {
+  const response = await axios.get(API_URL);
+  return response.data ? response : { data: [] };
+};
+
+// إنشاء حجز جديد
+export const createBooking = async (formData) => {
+  const response = await axios.post(API_URL, formData);
+  return response.data || {};
+};
+
+// تعديل حجز
+export const updateBooking = async (id, formData) => {
+  const response = await axios.put(`${API_URL}/${id}`, formData);
+  return response.data || {};
+};
+
+// حذف حجز
+export const deleteBooking = async (id) => {
+  const response = await axios.delete(`${API_URL}/${id}`);
+  return response.data || {};
+};
