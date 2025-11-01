@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // أمثلة إن أردت إضافة شيء مثل:
             // \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
+          $middleware->alias([
+        'auth' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        'permission' => \App\Http\Middleware\CheckPermission::class,
+    ]);
         
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import {
   Card,
@@ -10,13 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus } from "lucide-react";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login, register } from "@/api/auth";
 import { toast } from "sonner";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { login, register } = useAuth();
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
@@ -24,37 +25,40 @@ const Auth = () => {
     email: "",
     phone: "",
     password: "",
+    password_confirmation: "",
+    role: "staff",
   });
+  const [loading, setLoading] = useState(false);
 
   // تسجيل الدخول
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      const response = await login(loginData);
-
-      if (!response.data) throw new Error("فشل تسجيل الدخول");
-
+      await login(loginData);
       toast.success("تم تسجيل الدخول بنجاح ✅");
       navigate("/"); // الانتقال للوحة التحكم
     } catch (error) {
       console.error(error);
-      toast.error("فشل تسجيل الدخول ❌");
+      toast.error(error.response?.data?.message || "فشل تسجيل الدخول ❌");
+    } finally {
+      setLoading(false);
     }
   };
 
   // إنشاء حساب جديد
   const handleRegister = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      const response = await register(registerData);
-
-      if (!response.data) throw new Error("فشل إنشاء الحساب");
-
+      await register(registerData);
       toast.success("تم إنشاء الحساب بنجاح ✅");
       navigate("/"); // الانتقال بعد التسجيل
     } catch (error) {
       console.error(error);
-      toast.error("فشل إنشاء الحساب ❌");
+      toast.error(error.response?.data?.message || "فشل إنشاء الحساب ❌");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,7 +113,7 @@ const Auth = () => {
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full shadow-elegant">
+                    <Button type="submit" className="w-full shadow-elegant" disabled={loading}>
                       تسجيل الدخول
                     </Button>
                   </form>
@@ -156,7 +160,28 @@ const Auth = () => {
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full shadow-elegant">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">تأكيد كلمة المرور</label>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={registerData.password_confirmation}
+                        onChange={(e) => setRegisterData({ ...registerData, password_confirmation: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">نوع الحساب</label>
+                      <select
+                        value={registerData.role}
+                        onChange={(e) => setRegisterData({ ...registerData, role: e.target.value })}
+                        className="w-full border rounded p-2"
+                      >
+                        <option value="staff">موظف</option>
+                        <option value="admin">مدير</option>
+                      </select>
+                    </div>
+                    <Button type="submit" className="w-full shadow-elegant" disabled={loading}>
                       إنشاء حساب
                     </Button>
                   </form>
