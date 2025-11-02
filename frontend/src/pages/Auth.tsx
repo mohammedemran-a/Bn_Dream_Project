@@ -19,15 +19,17 @@ const Auth = () => {
   const navigate = useNavigate();
   const { login, register } = useAuth();
 
+  // بيانات تسجيل الدخول
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+
+  // بيانات إنشاء حساب (بدون حقل تأكيد كلمة المرور)
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    password_confirmation: "",
-    role: "staff",
   });
+
   const [loading, setLoading] = useState(false);
 
   // تسجيل الدخول
@@ -51,7 +53,9 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(registerData);
+      const { name, email, phone, password } = registerData;
+      await register({ name, email, phone, password });
+
       toast.success("تم إنشاء الحساب بنجاح ✅");
       navigate("/"); // الانتقال بعد التسجيل
     } catch (error) {
@@ -159,27 +163,6 @@ const Auth = () => {
                         onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                         required
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">تأكيد كلمة المرور</label>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        value={registerData.password_confirmation}
-                        onChange={(e) => setRegisterData({ ...registerData, password_confirmation: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">نوع الحساب</label>
-                      <select
-                        value={registerData.role}
-                        onChange={(e) => setRegisterData({ ...registerData, role: e.target.value })}
-                        className="w-full border rounded p-2"
-                      >
-                        <option value="staff">موظف</option>
-                        <option value="admin">مدير</option>
-                      </select>
                     </div>
                     <Button type="submit" className="w-full shadow-elegant" disabled={loading}>
                       إنشاء حساب

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Home, DoorOpen, Briefcase, Trophy, Phone, User, Bot, Settings } from "lucide-react";
+import { Menu, X, Home, DoorOpen, Briefcase, Trophy, Phone, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CartSheet } from "@/components/cart/CartSheet";
@@ -16,11 +16,10 @@ const Navbar = () => {
     { name: "الغرف", path: "/rooms", icon: DoorOpen },
     { name: "الخدمات", path: "/services", icon: Briefcase },
     { name: "المباريات", path: "/matches", icon: Trophy },
-    { name: "البوت", path: "/bot", icon: Bot },
     { name: "تواصل معنا", path: "/contact", icon: Phone },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
@@ -65,16 +64,13 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center gap-2 animate-fade-in-left shrink-0">
             <CartSheet />
             <ThemeToggle />
-            {!user ? (
-              <Link to="/auth">
-                <Button size="sm" className="gap-2 shadow-elegant">
-                  <User className="h-4 w-4" />
-                  <span className="hidden xl:inline">تسجيل الدخول</span>
-                </Button>
-              </Link>
-            ) : (
-              <span className="px-4 py-1 text-sm font-medium">مرحباً، {user.name}</span>
-            )}
+            {/* زر تسجيل الدخول دائمًا */}
+            <Link to="/auth">
+              <Button size="sm" className="gap-2 shadow-elegant">
+                <User className="h-4 w-4" />
+                تسجيل الدخول
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile/Tablet Right Side */}
@@ -114,16 +110,13 @@ const Navbar = () => {
             )}
 
             <div className="pt-2 border-t border-border/50">
-              {!user ? (
-                <Link to="/auth" onClick={() => setIsOpen(false)} className="block">
-                  <Button size="sm" className="w-full gap-2 shadow-elegant active:scale-[0.98]">
-                    <User className="h-4 w-4" />
-                    تسجيل الدخول
-                  </Button>
-                </Link>
-              ) : (
-                <span className="block px-4 py-2 text-sm font-medium">{user.name}</span>
-              )}
+              {/* زر تسجيل الدخول دائمًا */}
+              <Link to="/auth" onClick={() => setIsOpen(false)} className="block">
+                <Button size="sm" className="w-full gap-2 shadow-elegant active:scale-[0.98]">
+                  <User className="h-4 w-4" />
+                  تسجيل الدخول
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

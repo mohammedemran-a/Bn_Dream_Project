@@ -18,6 +18,6 @@ return [
     'max_age' => 0,
 
     // 👇 ضروري للسماح بالكوكيز
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

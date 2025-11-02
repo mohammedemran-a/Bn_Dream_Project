@@ -9,20 +9,17 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     /**
-     * تسجيل مستخدم جديد مع دور وصلاحيات
+     * تسجيل مستخدم جديد مع دور افتراضي "user"
      */
     public function register(Request $request)
     {
-        // التحقق من البيانات المدخلة
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,staff', // الأدوار المسموح بها
+            'password' => 'required|string|min:8',
         ]);
 
-        // إنشاء المستخدم
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -30,10 +27,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // تعيين الدور
-        $user->assignRole($request->role);
+        // تعيين الدور الافتراضي "user"
+        $user->assignRole('user');
 
-        // تحميل الدور والصلاحيات
+        // إنشاء توكن للمستخدم الجديد
+        $token = $user->createToken('auth_token')->plainTextToken;
+
         $user->load('roles', 'permissions');
 
         return response()->json([
@@ -42,14 +41,16 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'roles' => $user->getRoleNames(),           // الدور
-                'permissions' => $user->getAllPermissions()->pluck('name'), // الصلاحيات
+                'phone' => $user->phone,
+                'roles' => $user->getRoleNames(),
+                'permissions' => $user->getAllPermissions()->pluck('name'),
             ],
+            'token' => $token, // ✅ أضفنا التوكن
         ], 201);
     }
 
     /**
-     * تسجيل الدخول وإرجاع التوكن + الدور + الصلاحيات
+     * تسجيل الدخول
      */
     public function login(Request $request)
     {
@@ -60,14 +61,12 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        // إنشاء توكن
-        $token = $user->createToken('react_app_token')->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        // تحميل الدور والصلاحيات
         $user->load('roles', 'permissions');
 
         return response()->json([
@@ -76,6 +75,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
             ],
@@ -88,7 +88,10 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        if ($user) {
+            $user->currentAccessToken()->delete();
+        }
 
         return response()->json(['message' => 'Logged out successfully']);
     }
@@ -99,6 +102,10 @@ class AuthController extends Controller
     public function user(Request $request)
     {
         $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $user->load('roles', 'permissions');
 
         return response()->json([
@@ -106,9 +113,38 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
             ],
         ]);
+    }
+
+    /**
+     * جلب جميع المستخدمين (للأدمن فقط)
+     */
+    public function allUsers(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if (!$user->hasRole('admin')) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $users = User::with('roles')->get()->map(function ($u) {
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'phone' => $u->phone,
+                'roles' => $u->getRoleNames(),
+            ];
+        });
+
+        return response()->json(['users' => $users]);
     }
 }

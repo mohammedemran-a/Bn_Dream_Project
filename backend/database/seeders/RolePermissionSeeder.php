@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Hash;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -13,7 +15,7 @@ class RolePermissionSeeder extends Seeder
         // 🧹 مسح الكاش
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 🟢 إنشاء الصلاحيات
+        // 🔹 إنشاء الصلاحيات
         $permissions = [
             'can view',
             'can create',
@@ -27,14 +29,27 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // 🧑‍💼 إنشاء الأدوار
+        // 🔹 إنشاء دور المشرف Admin مع كل الصلاحيات
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole->givePermissionTo(Permission::all());
 
-        // المدير (Admin) — يمتلك كل الصلاحيات
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $admin->givePermissionTo(Permission::all());
+        // 🔹 إنشاء دور المستخدم User مع صلاحية العرض فقط
+        $userRole = Role::firstOrCreate(['name' => 'user']);
+        $userRole->givePermissionTo(['can view']);
 
-        // المستخدم العادي (User) — صلاحية عرض فقط
-        $user = Role::firstOrCreate(['name' => 'user']);
-        $user->givePermissionTo(['can view']);
+        // 🔹 إنشاء مشرف كامل
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@example.com'], // يتحقق إذا كان موجود بالفعل
+            [
+                'name' => 'Super Admin',
+                'phone' => '0123456789',
+                'password' => Hash::make('admin1234567'),
+            ]
+        );
+
+        // تعيين الدور Admin
+        $admin->assignRole('admin');
+
+        $this->command->info('✅ Admin user created with all fields and full permissions!');
     }
 }

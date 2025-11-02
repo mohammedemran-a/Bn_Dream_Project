@@ -1,11 +1,12 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: "http://127.0.0.1:8000", // تأكد من عنوان API الخاص بك
+  baseURL: "http://127.0.0.1:8000", // تأكد أن نفس البورت المستخدم في Laravel
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
+  withCredentials: true, // ✅ هذا مهم جدًا لـ Sanctum
 });
 
 // ✅ إضافة Authorization تلقائيًا إذا كان التوكن موجودًا

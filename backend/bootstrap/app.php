@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
           $middleware->alias([
-        'auth' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+         \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
     ]);
         
