@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
@@ -155,7 +156,15 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:8',
-            'role' => 'required|string|in:admin,user',
+            'role' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (!Role::where('name', $value)->exists()) {
+                        $fail("الدور المختار غير صالح.");
+                    }
+                },
+            ],
         ]);
 
         $user = User::create([
@@ -199,7 +208,15 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:8',
-            'role' => 'required|string|in:user,admin',
+            'role' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (!Role::where('name', $value)->exists()) {
+                        $fail("الدور المختار غير صالح.");
+                    }
+                },
+            ],
         ]);
 
         $user->name = $request->name;
