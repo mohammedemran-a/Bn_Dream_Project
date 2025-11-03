@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user, hasPermission } = useAuth();
+  const { user } = useAuth();
 
   const navLinks = [
     { name: "الرئيسية", path: "/", icon: Home },
@@ -49,15 +49,13 @@ const Navbar = () => {
               </Link>
             ))}
 
-            {/* زر لوحة التحكم يظهر فقط للمشرف */}
-            {user && (user.roles?.includes("admin") || hasPermission("manage users")) && (
-              <Link to="/admin" className="animate-fade-in">
-                <Button variant={isActive("/admin") ? "default" : "outline"} size="sm" className="gap-2 transition-smooth hover-lift">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden xl:inline">لوحة التحكم</span>
-                </Button>
-              </Link>
-            )}
+            {/* زر لوحة التحكم يظهر للجميع */}
+            <Link to="/admin" className="animate-fade-in">
+              <Button variant={isActive("/admin") ? "default" : "outline"} size="sm" className="gap-2 transition-smooth hover-lift">
+                <Settings className="h-4 w-4" />
+                <span className="hidden xl:inline">لوحة التحكم</span>
+              </Button>
+            </Link>
           </div>
 
           {/* Desktop Right Side */}
@@ -99,15 +97,13 @@ const Navbar = () => {
               </Link>
             ))}
 
-            {/* زر لوحة التحكم للمشرف فقط */}
-            {user && (user.roles?.includes("admin") || hasPermission("manage users")) && (
-              <Link to="/admin" onClick={() => setIsOpen(false)} className="block">
-                <Button variant={isActive("/admin") ? "default" : "outline"} size="sm" className="w-full justify-start gap-2 transition-smooth hover-lift active:scale-[0.98]">
-                  <Settings className="h-4 w-4" />
-                  لوحة التحكم
-                </Button>
-              </Link>
-            )}
+            {/* زر لوحة التحكم يظهر للجميع */}
+            <Link to="/admin" onClick={() => setIsOpen(false)} className="block">
+              <Button variant={isActive("/admin") ? "default" : "outline"} size="sm" className="w-full justify-start gap-2 transition-smooth hover-lift active:scale-[0.98]">
+                <Settings className="h-4 w-4" />
+                لوحة التحكم
+              </Button>
+            </Link>
 
             <div className="pt-2 border-t border-border/50">
               {/* زر تسجيل الدخول دائمًا */}

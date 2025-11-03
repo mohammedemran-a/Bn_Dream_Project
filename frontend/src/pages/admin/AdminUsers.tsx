@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { getAllUsers, createUser, updateUser, deleteUser } from "@/api/auth";
-import { getRoles } from "@/api/role"; // ✅ جلب الأدوار الحقيقية
+import { getRoles } from "@/api/role";
 import {
   Dialog,
   DialogContent,
@@ -50,10 +49,10 @@ interface IRole {
 }
 
 const AdminUsers = () => {
-  const { user, loading, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   const [users, setUsers] = useState<IUser[]>([]);
-  const [roles, setRoles] = useState<IRole[]>([]); // ✅ تخزين الأدوار
+  const [roles, setRoles] = useState<IRole[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
@@ -65,7 +64,7 @@ const AdminUsers = () => {
     role: "",
   });
 
-  // 🧩 جلب المستخدمين والأدوار عند التحميل
+  // 🧩 جلب المستخدمين والأدوار
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -75,14 +74,12 @@ const AdminUsers = () => {
         setRoles(rolesRes || []);
       } catch (error: unknown) {
         console.error(error);
-        if (error instanceof Error) {
-          toast.error(error.message || "حدث خطأ أثناء تحميل البيانات");
-        } else if (typeof error === "object" && error !== null && "response" in error) {
-          const e = error as { response?: { data?: { message?: string } } };
-          toast.error(e.response?.data?.message || "حدث خطأ أثناء تحميل البيانات");
-        } else {
-          toast.error("حدث خطأ غير معروف");
-        }
+        // نتحقق إن كان error يحتوي على response
+        const message =
+          error instanceof Error
+            ? error.message
+            : "حدث خطأ أثناء تحميل البيانات";
+        toast.error(message);
       } finally {
         setLoadingUsers(false);
       }
@@ -93,7 +90,6 @@ const AdminUsers = () => {
   // 🧩 إضافة أو تعديل مستخدم
   const handleAddOrEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       if (editingUser) {
         const response = await updateUser(editingUser.id, formData);
@@ -112,14 +108,11 @@ const AdminUsers = () => {
       setOpen(false);
     } catch (error: unknown) {
       console.error(error);
-      if (error instanceof Error) {
-        toast.error(error.message || "فشل العملية ❌");
-      } else if (typeof error === "object" && error !== null && "response" in error) {
-        const e = error as { response?: { data?: { message?: string } } };
-        toast.error(e.response?.data?.message || "فشل العملية ❌");
-      } else {
-        toast.error("حدث خطأ غير معروف");
-      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : "فشل العملية ❌";
+      toast.error(message);
     }
   };
 
@@ -132,14 +125,11 @@ const AdminUsers = () => {
       toast.success("تم حذف المستخدم ✅");
     } catch (error: unknown) {
       console.error(error);
-      if (error instanceof Error) {
-        toast.error(error.message || "فشل حذف المستخدم ❌");
-      } else if (typeof error === "object" && error !== null && "response" in error) {
-        const e = error as { response?: { data?: { message?: string } } };
-        toast.error(e.response?.data?.message || "فشل حذف المستخدم ❌");
-      } else {
-        toast.error("حدث خطأ غير معروف");
-      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : "فشل حذف المستخدم ❌";
+      toast.error(message);
     }
   };
 
@@ -156,9 +146,17 @@ const AdminUsers = () => {
     setOpen(true);
   };
 
-  // 🧩 حماية الصفحة
-  if (!loading && (!user || !user.roles?.includes("admin"))) {
-    return <Navigate to="/unauthorized" />;
+  // 🧩 التحقق من صلاحية العرض
+  if (!hasPermission("can view")) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-xl text-red-500 font-semibold">
+            🚫 ليس لديك صلاحية عرض المستخدمين
+          </p>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
@@ -173,117 +171,119 @@ const AdminUsers = () => {
             </p>
           </div>
 
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 shadow-elegant">
-                <Plus className="w-4 h-4" />
-                {editingUser ? "تعديل المستخدم" : "إضافة مستخدم جديد"}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
+          {hasPermission("can create") && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 shadow-elegant">
+                  <Plus className="w-4 h-4" />
                   {editingUser ? "تعديل المستخدم" : "إضافة مستخدم جديد"}
-                </DialogTitle>
-                <DialogDescription>
-                  يمكنك إدخال بيانات المستخدم هنا وتعيين دوره.
-                </DialogDescription>
-              </DialogHeader>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingUser ? "تعديل المستخدم" : "إضافة مستخدم جديد"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    يمكنك إدخال بيانات المستخدم هنا وتعيين دوره.
+                  </DialogDescription>
+                </DialogHeader>
 
-              <form onSubmit={handleAddOrEditUser} className="space-y-4 mt-4">
-                <div>
-                  <Label>الاسم</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder="أدخل اسم المستخدم"
-                    required
-                  />
-                </div>
+                <form onSubmit={handleAddOrEditUser} className="space-y-4 mt-4">
+                  <div>
+                    <Label>الاسم</Label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      placeholder="أدخل اسم المستخدم"
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <Label>البريد الإلكتروني</Label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="example@email.com"
-                    required
-                  />
-                </div>
+                  <div>
+                    <Label>البريد الإلكتروني</Label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      placeholder="example@email.com"
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <Label>رقم الهاتف</Label>
-                  <Input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
-                    placeholder="مثلاً: 777777777"
-                  />
-                </div>
+                  <div>
+                    <Label>رقم الهاتف</Label>
+                    <Input
+                      type="text"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      placeholder="مثلاً: 777777777"
+                    />
+                  </div>
 
-                <div>
-                  <Label>كلمة المرور</Label>
-                  <Input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    placeholder={
-                      editingUser
-                        ? "•••••••• (اتركه فارغًا إن لم ترغب بتغييره)"
-                        : "••••••••"
-                    }
-                    required={!editingUser}
-                  />
-                </div>
+                  <div>
+                    <Label>كلمة المرور</Label>
+                    <Input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      placeholder={
+                        editingUser
+                          ? "•••••••• (اتركه فارغًا إن لم ترغب بتغييره)"
+                          : "••••••••"
+                      }
+                      required={!editingUser}
+                    />
+                  </div>
 
-                <div>
-                  <Label>الدور (Role)</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, role: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر الدور" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.id} value={role.name}>
-                          {role.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <Label>الدور (Role)</Label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, role: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر الدور" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.id} value={role.name}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <DialogFooter className="flex justify-end mt-4 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setOpen(false);
-                      setEditingUser(null);
-                    }}
-                  >
-                    إلغاء
-                  </Button>
-                  <Button type="submit">
-                    {editingUser ? "تحديث المستخدم" : "حفظ المستخدم"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter className="flex justify-end mt-4 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setOpen(false);
+                        setEditingUser(null);
+                      }}
+                    >
+                      إلغاء
+                    </Button>
+                    <Button type="submit">
+                      {editingUser ? "تحديث المستخدم" : "حفظ المستخدم"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {/* جدول المستخدمين */}
@@ -327,22 +327,26 @@ const AdminUsers = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="hover:bg-primary/10"
-                          onClick={() => handleEditClick(user)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {hasPermission("can edit") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-primary/10"
+                            onClick={() => handleEditClick(user)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {hasPermission("can delete") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

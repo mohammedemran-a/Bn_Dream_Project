@@ -10,7 +10,7 @@ use Spatie\Permission\Models\Role;
 class AuthController extends Controller
 {
     // -----------------------------
-    // تسجيل مستخدم جديد (عادي)
+    // 🟢 تسجيل مستخدم جديد (عادي)
     // -----------------------------
     public function register(Request $request)
     {
@@ -28,7 +28,8 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $user->assignRole('user'); // الدور الافتراضي
+        // تعيين الدور الافتراضي
+        $user->assignRole('user');
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -49,7 +50,7 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // تسجيل الدخول
+    // 🟢 تسجيل الدخول
     // -----------------------------
     public function login(Request $request)
     {
@@ -65,7 +66,6 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
-
         $user->load('roles', 'permissions');
 
         return response()->json([
@@ -83,7 +83,7 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // تسجيل الخروج
+    // 🔴 تسجيل الخروج
     // -----------------------------
     public function logout(Request $request)
     {
@@ -96,7 +96,7 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // جلب بيانات المستخدم الحالي
+    // 🟡 جلب بيانات المستخدم الحالي
     // -----------------------------
     public function user(Request $request)
     {
@@ -120,13 +120,17 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // جلب جميع المستخدمين (Admin فقط)
+    // 📋 جلب جميع المستخدمين
+    // (صلاحية can view)
     // -----------------------------
     public function allUsers(Request $request)
     {
         $user = $request->user();
         if (!$user) return response()->json(['message' => 'Unauthorized'], 401);
-        if (!$user->hasRole('admin')) return response()->json(['message' => 'Forbidden'], 403);
+
+        if (!$user->hasRole('admin') && !$user->can('can view')) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         $users = User::with('roles')->get()->map(function ($u) {
             return [
@@ -142,12 +146,13 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // إنشاء مستخدم جديد (Admin فقط)
+    // 🟢 إنشاء مستخدم جديد
+    // (صلاحية can create)
     // -----------------------------
     public function store(Request $request)
     {
         $admin = $request->user();
-        if (!$admin || !$admin->hasRole('admin')) {
+        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('can create'))) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -189,12 +194,13 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // تعديل بيانات مستخدم (Admin فقط)
+    // ✏️ تعديل بيانات مستخدم
+    // (صلاحية can edit)
     // -----------------------------
     public function updateUser(Request $request, $id)
     {
         $admin = $request->user();
-        if (!$admin || !$admin->hasRole('admin')) {
+        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('can edit'))) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -228,7 +234,6 @@ class AuthController extends Controller
         }
 
         $user->save();
-
         $user->syncRoles([$request->role]);
 
         return response()->json([
@@ -244,12 +249,13 @@ class AuthController extends Controller
     }
 
     // -----------------------------
-    // حذف مستخدم (Admin فقط)
+    // ❌ حذف مستخدم
+    // (صلاحية can delete)
     // -----------------------------
     public function deleteUser(Request $request, $id)
     {
         $admin = $request->user();
-        if (!$admin || !$admin->hasRole('admin')) {
+        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('can delete'))) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
