@@ -22,6 +22,7 @@ import AdminServices from "./pages/admin/AdminServices";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminMatches from "./pages/admin/AdminMatches";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminRoles from "./pages/admin/AdminRoles";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/admin/orders" element={<AdminOrders />} />
                 <Route path="/admin/matches" element={<AdminMatches />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/roles" element={<AdminRoles />} />
                 <Route path="/admin/notifications" element={<AdminNotifications />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
 

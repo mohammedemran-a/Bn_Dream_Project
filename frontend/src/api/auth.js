@@ -1,8 +1,8 @@
 import axios from "./axios";
 
-// -------------------------
-// تسجيل مستخدم جديد
-// -------------------------
+// ==========================================================
+// 🔹 تسجيل مستخدم جديد (عادي - أثناء التسجيل من الواجهة العامة)
+// ==========================================================
 export const register = async (data) => {
   try {
     const response = await axios.post("/api/register", data);
@@ -14,9 +14,9 @@ export const register = async (data) => {
   }
 };
 
-// -------------------------
-// تسجيل الدخول
-// -------------------------
+// ==========================================================
+// 🔹 تسجيل الدخول
+// ==========================================================
 export const login = async (data) => {
   try {
     const response = await axios.post("/api/login", data);
@@ -28,17 +28,21 @@ export const login = async (data) => {
   }
 };
 
-// -------------------------
-// تسجيل الخروج
-// -------------------------
+// ==========================================================
+// 🔹 تسجيل الخروج
+// ==========================================================
 export const logout = async () => {
   const token = localStorage.getItem("token");
   if (!token) return;
 
   try {
-    await axios.post("/api/logout", {}, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await axios.post(
+      "/api/logout",
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
   } catch (error) {
     throw error.response?.data || { message: "فشل تسجيل الخروج" };
   } finally {
@@ -46,9 +50,9 @@ export const logout = async () => {
   }
 };
 
-// -------------------------
-// جلب بيانات المستخدم الحالي
-// -------------------------
+// ==========================================================
+// 🔹 جلب بيانات المستخدم الحالي
+// ==========================================================
 export const getUser = async () => {
   const token = localStorage.getItem("token");
   if (!token) return null;
@@ -63,9 +67,9 @@ export const getUser = async () => {
   }
 };
 
-// -------------------------
-// جلب جميع المستخدمين (للمشرف فقط)
-// -------------------------
+// ==========================================================
+// 🔹 جلب جميع المستخدمين (خاص بالمشرف)
+// ==========================================================
 export const getAllUsers = async () => {
   const token = localStorage.getItem("token");
   if (!token) return [];
@@ -77,5 +81,56 @@ export const getAllUsers = async () => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: "فشل جلب بيانات المستخدمين" };
+  }
+};
+
+// ==========================================================
+// 🔹 إنشاء مستخدم جديد (من لوحة التحكم - بواسطة المشرف)
+// ==========================================================
+export const createUser = async (data) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw { message: "يجب تسجيل الدخول أولاً" };
+
+  try {
+    const response = await axios.post("/api/users", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: "فشل في إنشاء المستخدم" };
+  }
+};
+
+// ==========================================================
+// 🔹 تعديل بيانات مستخدم (اختياري للاستخدام لاحقًا)
+// ==========================================================
+export const updateUser = async (id, data) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw { message: "يجب تسجيل الدخول أولاً" };
+
+  try {
+    const response = await axios.put(`/api/users/${id}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: "فشل في تحديث المستخدم" };
+  }
+};
+
+// ==========================================================
+// 🔹 حذف مستخدم (اختياري للاستخدام لاحقًا)
+// ==========================================================
+export const deleteUser = async (id) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw { message: "يجب تسجيل الدخول أولاً" };
+
+  try {
+    const response = await axios.delete(`/api/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: "فشل في حذف المستخدم" };
   }
 };

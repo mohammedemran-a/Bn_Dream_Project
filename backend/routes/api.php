@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\PredictionController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\RolePermissionController;
 
 Route::post('/predictions', [PredictionController::class, 'store']);
 Route::get('/predictions/user/{user_id}', [PredictionController::class, 'getUserPredictions']);
@@ -38,6 +39,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::get('/users', [AuthController::class, 'allUsers']);
+    Route::post('/users', [AuthController::class, 'store']);
+    Route::put('/users/{id}', [AuthController::class, 'updateUser']);
+    Route::delete('/users/{id}', [AuthController::class, 'deleteUser']);
 });
 
 Route::apiResource('bookings', BookingController::class);
@@ -57,3 +61,18 @@ Route::post('/contact', [ContactController::class, 'store']);
 
 // ✅ عرض جميع الرسائل (اختياري)
 Route::get('/contact', [ContactController::class, 'index']);
+
+
+// Route::middleware(['auth:sanctum'])->group(function () {
+//     Route::get('/roles', [RolePermissionController::class, 'index']);
+//     Route::get('/permissions', [RolePermissionController::class, 'permissions']);
+//     Route::post('/roles', [RolePermissionController::class, 'store']);
+//     Route::put('/roles/{id}', [RolePermissionController::class, 'update']);
+//     Route::delete('/roles/{id}', [RolePermissionController::class, 'destroy']);
+// }); 
+
+Route::get('/roles', [RolePermissionController::class, 'index']);
+    Route::get('/permissions', [RolePermissionController::class, 'permissions']);
+    Route::post('/roles', [RolePermissionController::class, 'store']);
+    Route::put('/roles/{id}', [RolePermissionController::class, 'update']);
+    Route::delete('/roles/{id}', [RolePermissionController::class, 'destroy']);

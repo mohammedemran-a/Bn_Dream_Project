@@ -7,6 +7,7 @@ import {
   ShoppingCart,
   Trophy,
   Users,
+  Shield,
   Bell,
   Settings,
   LogOut
@@ -21,6 +22,7 @@ const menuItems = [
   { icon: ShoppingCart, label: "الطلبات الواردة", path: "/admin/orders" },
   { icon: Trophy, label: "إدارة المباريات", path: "/admin/matches" },
   { icon: Users, label: "إدارة المستخدمين", path: "/admin/users" },
+  { icon: Shield, label: "الأدوار والصلاحيات", path: "/admin/roles" },
   { icon: Bell, label: "الإشعارات", path: "/admin/notifications" },
   { icon: Settings, label: "الإعدادات", path: "/admin/settings" },
 ];
