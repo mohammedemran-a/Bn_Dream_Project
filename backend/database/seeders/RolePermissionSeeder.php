@@ -24,7 +24,6 @@ class RolePermissionSeeder extends Seeder
             "rooms_edit",
             "rooms_delete",
             "bookings_view",
-            "bookings_create",
             "bookings_edit",
             "bookings_delete",
             "services_view",
@@ -33,6 +32,7 @@ class RolePermissionSeeder extends Seeder
             "services_delete",
             "orders_view",
             "orders_process",
+            "orders_delete",
             "matches_view",
             "matches_create",
             "matches_edit",
@@ -82,3 +82,4 @@ class RolePermissionSeeder extends Seeder
         $this->command->info('✅ Roles & permissions seeded. Admin has all permissions, user has none.');
     }
 }
+

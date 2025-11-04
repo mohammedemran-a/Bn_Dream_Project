@@ -11,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Eye } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { getBookings, updateBooking } from "@/api/bookings";
+import { getBookings, updateBooking, deleteBooking } from "@/api/bookings";
+import { useAuth } from "@/context/AuthContext";
 
 // 🧩 تعريف نوع الحجز (TypeScript)
 interface Booking {
@@ -40,27 +39,42 @@ const AdminBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("الكل");
   const [loading, setLoading] = useState<boolean>(true);
+  const { hasPermission } = useAuth();
 
-  // 🟢 تحميل الحجوزات من الـ API (داخل useCallback)
+  // 🟢 تحميل الحجوزات من الـ API
   const fetchBookings = useCallback(async () => {
+    if (!hasPermission("bookings_view")) return;
     try {
       setLoading(true);
       const res = await getBookings(statusFilter);
-      setBookings(res.data);
+      setBookings(res.data || []);
     } catch (error) {
       console.error("فشل في جلب الحجوزات:", error);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, hasPermission]);
 
   // 🟠 تغيير حالة الحجز (تأكيد أو إلغاء)
   const changeStatus = async (id: number, newStatus: string) => {
+    if (!hasPermission("bookings_edit")) return;
     try {
       await updateBooking(id, { status: newStatus });
-      fetchBookings(); // إعادة تحميل بعد التحديث
+      fetchBookings();
     } catch (error) {
       console.error("فشل في تحديث الحالة:", error);
+    }
+  };
+
+  // 🔴 حذف الحجز
+  const handleDelete = async (id: number) => {
+    if (!hasPermission("bookings_delete")) return;
+    if (!confirm("هل أنت متأكد من حذف هذا الحجز؟")) return;
+    try {
+      await deleteBooking(id);
+      fetchBookings();
+    } catch (error) {
+      console.error("فشل في حذف الحجز:", error);
     }
   };
 
@@ -81,6 +95,19 @@ const AdminBookings = () => {
         return "outline";
     }
   };
+
+  // ✋ التحقق من صلاحية العرض
+  if (!hasPermission("bookings_view")) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-xl text-red-500 font-semibold">
+            🚫 ليس لديك صلاحية عرض الحجوزات
+          </p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -144,34 +171,37 @@ const AdminBookings = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="hover:bg-primary/10"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-
-                            {booking.status === "قيد المراجعة" && (
+                            {hasPermission("bookings_edit") && booking.status === "قيد المراجعة" && (
                               <>
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
                                   className="hover:bg-success/10 text-success"
                                   onClick={() => changeStatus(booking.id, "مؤكد")}
                                 >
-                                  <Check className="w-4 h-4" />
+                                  تأكيد
                                 </Button>
 
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
                                   className="hover:bg-destructive/10 text-destructive"
                                   onClick={() => changeStatus(booking.id, "ملغي")}
                                 >
-                                  <X className="w-4 h-4" />
+                                  إلغاء
                                 </Button>
                               </>
+                            )}
+
+                            {hasPermission("bookings_delete") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="hover:bg-destructive/20 text-destructive"
+                                onClick={() => handleDelete(booking.id)}
+                              >
+                                حذف
+                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -179,7 +209,6 @@ const AdminBookings = () => {
                     ))
                   ) : (
                     <TableRow>
-                      {/* ✅ تم تعديل colSpan إلى رقم */}
                       <TableCell colSpan={8} className="text-center py-6">
                         لا توجد حجوزات حالياً
                       </TableCell>
@@ -196,4 +225,3 @@ const AdminBookings = () => {
 };
 
 export default AdminBookings;
-

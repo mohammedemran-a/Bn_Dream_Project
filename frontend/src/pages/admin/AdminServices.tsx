@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "@/api/products";
 import { Badge } from "@/components/ui/badge";
@@ -205,25 +205,33 @@ const AdminServices = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة المنتجات</h1>
 
-          {hasPermission("services_create") && (
+          {(hasPermission("services_create") || hasPermission("services_edit")) && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button
-                  className="gap-2"
-                  onClick={() => {
-                    resetForm();
-                    setEditingProduct(null);
-                  }}
-                >
-                  <Plus className="w-4 h-4" />
-                  إضافة منتج جديد
-                </Button>
+                {hasPermission("services_create") && (
+                  <Button
+                    className="gap-2"
+                    onClick={() => {
+                      resetForm();
+                      setEditingProduct(null);
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة منتج جديد
+                  </Button>
+                )}
               </DialogTrigger>
+
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>
                     {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {editingProduct
+                      ? "قم بتعديل بيانات المنتج ثم اضغط تحديث"
+                      : "أدخل بيانات المنتج الجديد ثم اضغط حفظ"}
+                  </DialogDescription>
                 </DialogHeader>
 
                 <form className="space-y-4" onSubmit={handleSubmit}>

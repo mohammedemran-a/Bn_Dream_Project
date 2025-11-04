@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -45,7 +46,6 @@ const AdminMatches = () => {
     status: "قادمة",
   });
 
-  // 🟢 تحميل جميع المباريات عند فتح الصفحة
   useEffect(() => {
     if (hasPermission("matches_view")) {
       fetchMatches();
@@ -131,23 +131,24 @@ const AdminMatches = () => {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* رأس الصفحة */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">إدارة المباريات</h1>
             <p className="text-muted-foreground">إضافة المباريات وتحديث نتائجها</p>
           </div>
 
-          {hasPermission("matches_create") && (
+          {(hasPermission("matches_create") || hasPermission("matches_edit")) && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button
-                  className="gap-2 shadow-elegant"
-                  onClick={() => setEditingMatch(null)}
-                >
-                  <Plus className="w-4 h-4" />
-                  إضافة مباراة
-                </Button>
+                {hasPermission("matches_create") && (
+                  <Button
+                    className="gap-2 shadow-elegant"
+                    onClick={() => setEditingMatch(null)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة مباراة
+                  </Button>
+                )}
               </DialogTrigger>
 
               <DialogContent>
@@ -155,6 +156,11 @@ const AdminMatches = () => {
                   <DialogTitle>
                     {editingMatch ? "تعديل المباراة" : "إضافة مباراة جديدة"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {editingMatch
+                      ? "قم بتعديل بيانات المباراة ثم اضغط تحديث"
+                      : "أدخل بيانات المباراة الجديدة ثم اضغط حفظ"}
+                  </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -262,7 +268,6 @@ const AdminMatches = () => {
           )}
         </div>
 
-        {/* جدول المباريات */}
         <Card>
           <CardHeader>
             <CardTitle>قائمة المباريات</CardTitle>

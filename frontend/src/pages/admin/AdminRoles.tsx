@@ -32,9 +32,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-
-// ✅ استيراد ملف الترجمة
 import permissionsTranslations from "@/lang/permissions.json";
+import { useAuth } from "@/context/AuthContext";
 
 interface Role {
   id: number;
@@ -57,8 +56,8 @@ const AdminRoles = () => {
   const [roleName, setRoleName] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const { toast } = useToast();
+  const { hasPermission } = useAuth();
 
-  // 🔹 جلب الأدوار والصلاحيات من Laravel
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -66,14 +65,12 @@ const AdminRoles = () => {
           getRoles(),
           getPermissions(),
         ]);
-
         setRoles(rolesRes);
 
-        // ✅ ترجمة أسماء الصلاحيات باستخدام ملف permissions.json
         setAvailablePermissions(
           permissionsRes.map((p: string) => ({
             id: p,
-            label: permissionsTranslations[p] || p, // ترجمة أو الكلمة الأصلية كبديل
+            label: permissionsTranslations[p] || p,
           }))
         );
       } catch (error) {
@@ -89,6 +86,8 @@ const AdminRoles = () => {
   }, [toast]);
 
   const handleOpenDialog = (role?: Role) => {
+    if (!hasPermission(role ? "roles_edit" : "roles_create")) return;
+
     if (role) {
       setEditingRole(role);
       setRoleName(role.name);
@@ -117,6 +116,8 @@ const AdminRoles = () => {
   };
 
   const handleSaveRole = async () => {
+    if (!hasPermission(editingRole ? "roles_edit" : "roles_create")) return;
+
     if (!roleName.trim()) {
       toast({
         title: "خطأ",
@@ -137,23 +138,11 @@ const AdminRoles = () => {
 
     try {
       if (editingRole) {
-        await updateRole(editingRole.id, {
-          name: roleName,
-          permissions: selectedPermissions,
-        });
-        toast({
-          title: "تم التحديث",
-          description: "تم تعديل الدور بنجاح ✅",
-        });
+        await updateRole(editingRole.id, { name: roleName, permissions: selectedPermissions });
+        toast({ title: "تم التحديث", description: "تم تعديل الدور بنجاح ✅" });
       } else {
-        await createRole({
-          name: roleName,
-          permissions: selectedPermissions,
-        });
-        toast({
-          title: "تم الإنشاء",
-          description: "تم إنشاء الدور بنجاح ✅",
-        });
+        await createRole({ name: roleName, permissions: selectedPermissions });
+        toast({ title: "تم الإنشاء", description: "تم إنشاء الدور بنجاح ✅" });
       }
 
       handleCloseDialog();
@@ -170,12 +159,11 @@ const AdminRoles = () => {
   };
 
   const handleDeleteRole = async (id: number) => {
+    if (!hasPermission("roles_delete")) return;
+
     try {
       await deleteRole(id);
-      toast({
-        title: "تم الحذف",
-        description: "تم حذف الدور بنجاح ✅",
-      });
+      toast({ title: "تم الحذف", description: "تم حذف الدور بنجاح ✅" });
       const updatedRoles = await getRoles();
       setRoles(updatedRoles);
     } catch (error) {
@@ -188,6 +176,18 @@ const AdminRoles = () => {
     }
   };
 
+  if (!hasPermission("roles_view")) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-xl text-red-500 font-semibold">
+            🚫 ليس لديك صلاحية عرض الأدوار
+          </p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
@@ -199,74 +199,70 @@ const AdminRoles = () => {
             </p>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={() => handleOpenDialog()}
-                className="gap-2 shadow-elegant"
-              >
-                <Plus className="w-4 h-4" />
-                إضافة دور جديد
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingRole ? "تعديل الدور" : "إضافة دور جديد"}
-                </DialogTitle>
-                <DialogDescription>
-                  قم بتحديد اسم الدور والصلاحيات المرتبطة به
-                </DialogDescription>
-              </DialogHeader>
+          {/* 🔹 تعديل: يظهر الزر إذا كان لديه صلاحية إنشاء أو تعديل */}
+          {(hasPermission("roles_create") || hasPermission("roles_edit")) && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                {hasPermission("roles_create") && (
+                  <Button onClick={() => handleOpenDialog()} className="gap-2 shadow-elegant">
+                    <Plus className="w-4 h-4" />
+                    إضافة دور جديد
+                  </Button>
+                )}
+              </DialogTrigger>
 
-              <div className="space-y-6 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="role-name">اسم الدور</Label>
-                  <Input
-                    id="role-name"
-                    placeholder="مثال: مدير الحجوزات"
-                    value={roleName}
-                    onChange={(e) => setRoleName(e.target.value)}
-                  />
-                </div>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editingRole ? "تعديل الدور" : "إضافة دور جديد"}</DialogTitle>
+                  <DialogDescription>
+                    قم بتحديد اسم الدور والصلاحيات المرتبطة به
+                  </DialogDescription>
+                </DialogHeader>
 
-                <div className="space-y-4">
-                  <Label>الصلاحيات</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
-                    {availablePermissions.map((permission) => (
-                      <div
-                        key={permission.id}
-                        className="flex items-center space-x-2 space-x-reverse"
-                      >
-                        <Checkbox
-                          id={permission.id}
-                          checked={selectedPermissions.includes(permission.id)}
-                          onCheckedChange={() =>
-                            handlePermissionToggle(permission.id)
-                          }
-                        />
-                        <label
-                          htmlFor={permission.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {permission.label}
-                        </label>
-                      </div>
-                    ))}
+                <div className="space-y-6 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="role-name">اسم الدور</Label>
+                    <Input
+                      id="role-name"
+                      placeholder="مثال: مدير الحجوزات"
+                      value={roleName}
+                      onChange={(e) => setRoleName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>الصلاحيات</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
+                      {availablePermissions.map((permission) => (
+                        <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
+                          <Checkbox
+                            id={permission.id}
+                            checked={selectedPermissions.includes(permission.id)}
+                            onCheckedChange={() => handlePermissionToggle(permission.id)}
+                          />
+                          <label
+                            htmlFor={permission.id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {permission.label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <DialogFooter>
-                <Button variant="outline" onClick={handleCloseDialog}>
-                  إلغاء
-                </Button>
-                <Button onClick={handleSaveRole}>
-                  {editingRole ? "حفظ التعديلات" : "إنشاء الدور"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={handleCloseDialog}>
+                    إلغاء
+                  </Button>
+                  <Button onClick={handleSaveRole}>
+                    {editingRole ? "حفظ التعديلات" : "إنشاء الدور"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <Card>
@@ -289,36 +285,34 @@ const AdminRoles = () => {
                   <TableRow key={role.id} className="hover:bg-accent/5">
                     <TableCell className="font-medium">{role.name}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {role.permissions.length} صلاحية
-                      </Badge>
+                      <Badge variant="secondary">{role.permissions.length} صلاحية</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {role.usersCount} مستخدم
-                      </Badge>
+                      <Badge variant="outline">{role.usersCount} مستخدم</Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {role.createdAt}
-                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{role.createdAt}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="hover:bg-primary/10"
-                          onClick={() => handleOpenDialog(role)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => handleDeleteRole(role.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {hasPermission("roles_edit") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-primary/10"
+                            onClick={() => handleOpenDialog(role)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {hasPermission("roles_delete") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => handleDeleteRole(role.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

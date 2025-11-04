@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSettings, updateSettings } from '@/api/settings.js';
+import { useAuth } from "@/context/AuthContext"; // ✅ استدعاء سياق الصلاحيات
 
 const AdminSettings = () => {
+  const { hasPermission } = useAuth(); // ✅ Hook للتحقق من الصلاحيات
   const [settings, setSettings] = useState({
     siteName: "",
     siteDescription: "",
@@ -16,39 +18,41 @@ const AdminSettings = () => {
     whatsapp: "",
     telegram: "",
   });
-  
-  const [logoFile, setLogoFile] = useState(null);
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (!hasPermission("settings_view")) return; // ✅ لن نقوم بالتحميل إذا لم يمتلك الصلاحية
     setLoading(true);
     getSettings()
       .then((response) => setSettings(prev => ({ ...prev, ...response.data })))
       .catch(() => setMessage("فشل في جلب الإعدادات."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [hasPermission]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setSettings((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setLogoFile(e.target.files[0]);
     }
   };
 
   const handleSave = () => {
+    if (!hasPermission("settings_edit")) return; // ✅ لا يسمح بالحفظ بدون الصلاحية
     setLoading(true);
     setMessage("");
     const formData = new FormData();
 
     Object.keys(settings).forEach((key) => {
       if (key === 'logo' && logoFile) return;
-      if (settings[key] !== null) {
-        formData.append(key, settings[key]);
+      if (settings[key as keyof typeof settings] !== null) {
+        formData.append(key, settings[key as keyof typeof settings]);
       }
     });
 
@@ -69,6 +73,19 @@ const AdminSettings = () => {
       });
   };
 
+  // ✅ التحقق من صلاحية العرض قبل أي شيء
+  if (!hasPermission("settings_view")) {
+    return (
+      <AdminLayout>
+        <div className="p-10 text-center text-destructive text-lg font-semibold">
+          🚫 ليس لديك صلاحية عرض الإعدادات
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const isEditable = hasPermission("settings_edit");
+
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in max-w-4xl pb-12">
@@ -84,16 +101,16 @@ const AdminSettings = () => {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="siteName">اسم الموقع</Label>
-              <Input id="siteName" value={settings.siteName || ''} onChange={handleInputChange} disabled={loading} />
+              <Input id="siteName" value={settings.siteName || ''} onChange={handleInputChange} disabled={!isEditable || loading} />
             </div>
             <div>
               <Label htmlFor="siteDescription">وصف الموقع</Label>
-              <Input id="siteDescription" value={settings.siteDescription || ''} onChange={handleInputChange} disabled={loading} />
+              <Input id="siteDescription" value={settings.siteDescription || ''} onChange={handleInputChange} disabled={!isEditable || loading} />
             </div>
             <div>
               <Label htmlFor="logo">الشعار</Label>
               {settings.logo && <img src={settings.logo} alt="الشعار الحالي" className="my-2 h-16 w-auto rounded bg-slate-200" />}
-              <Input id="logo" type="file" onChange={handleFileChange} disabled={loading} />
+              <Input id="logo" type="file" onChange={handleFileChange} disabled={!isEditable || loading} />
             </div>
           </CardContent>
         </Card>
@@ -101,18 +118,20 @@ const AdminSettings = () => {
         <Card>
           <CardHeader><CardTitle>إعدادات الاتصال</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div><Label htmlFor="email">البريد الإلكتروني</Label><Input id="email" type="email" value={settings.email || ''} onChange={handleInputChange} disabled={loading} /></div>
-            <div><Label htmlFor="phone">رقم الهاتف</Label><Input id="phone" value={settings.phone || ''} onChange={handleInputChange} disabled={loading} /></div>
-            <div><Label htmlFor="whatsapp">رقم الواتساب</Label><Input id="whatsapp" value={settings.whatsapp || ''} onChange={handleInputChange} disabled={loading} /></div>
-            <div><Label htmlFor="telegram">معرف التليجرام</Label><Input id="telegram" value={settings.telegram || ''} onChange={handleInputChange} disabled={loading} /></div>
+            <div><Label htmlFor="email">البريد الإلكتروني</Label><Input id="email" type="email" value={settings.email || ''} onChange={handleInputChange} disabled={!isEditable || loading} /></div>
+            <div><Label htmlFor="phone">رقم الهاتف</Label><Input id="phone" value={settings.phone || ''} onChange={handleInputChange} disabled={!isEditable || loading} /></div>
+            <div><Label htmlFor="whatsapp">رقم الواتساب</Label><Input id="whatsapp" value={settings.whatsapp || ''} onChange={handleInputChange} disabled={!isEditable || loading} /></div>
+            <div><Label htmlFor="telegram">معرف التليجرام</Label><Input id="telegram" value={settings.telegram || ''} onChange={handleInputChange} disabled={!isEditable || loading} /></div>
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        {isEditable && (
+          <div className="flex justify-end">
             <Button onClick={handleSave} disabled={loading} size="lg">
               {loading ? "جاري الحفظ..." : "حفظ كل التغييرات"}
             </Button>
-        </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

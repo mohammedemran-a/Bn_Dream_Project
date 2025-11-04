@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -193,11 +194,7 @@ const AdminRooms = () => {
               <TableCell>
                 <div className="flex gap-2 justify-end">
                   {hasPermission("rooms_edit") && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(room)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(room)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
                   )}
@@ -236,25 +233,33 @@ const AdminRooms = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة الغرف</h1>
 
-          {hasPermission("rooms_create") && (
+          {(hasPermission("rooms_create") || hasPermission("rooms_edit")) && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button
-                  className="gap-2"
-                  onClick={() => {
-                    resetForm();
-                    setEditingRoom(null);
-                  }}
-                >
-                  <Plus className="w-4 h-4" />
-                  إضافة غرفة جديدة
-                </Button>
+                {hasPermission("rooms_create") && (
+                  <Button
+                    className="gap-2"
+                    onClick={() => {
+                      resetForm();
+                      setEditingRoom(null);
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة غرفة جديدة
+                  </Button>
+                )}
               </DialogTrigger>
+
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>
                     {editingRoom ? "تعديل الغرفة" : "إضافة غرفة جديدة"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {editingRoom
+                      ? "قم بتعديل بيانات الغرفة ثم اضغط تحديث"
+                      : "أدخل بيانات الغرفة الجديدة ثم اضغط حفظ"}
+                  </DialogDescription>
                 </DialogHeader>
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
