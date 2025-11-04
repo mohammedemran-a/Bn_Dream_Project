@@ -12,34 +12,64 @@ class RolePermissionSeeder extends Seeder
 {
     public function run()
     {
-        // 🧹 مسح الكاش
+        // 🧹 تنظيف الكاش
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 🔹 إنشاء الصلاحيات
+        // 🔹 جميع الصلاحيات (من ملفك الأول)
         $permissions = [
-            'can view',
-            'can create',
-            'can edit',
-            'can delete',
-            'can manage users',
-            'can manage settings',
+            "dashboard_access",
+            "dashboard_view",
+            "rooms_view",
+            "rooms_create",
+            "rooms_edit",
+            "rooms_delete",
+            "bookings_view",
+            "bookings_create",
+            "bookings_edit",
+            "bookings_delete",
+            "services_view",
+            "services_create",
+            "services_edit",
+            "services_delete",
+            "orders_view",
+            "orders_process",
+            "matches_view",
+            "matches_create",
+            "matches_edit",
+            "matches_delete",
+            "users_view",
+            "users_create",
+            "users_edit",
+            "users_delete",
+            "roles_view",
+            "roles_create",
+            "roles_edit",
+            "roles_delete",
+            "notifications_view",
+            "notifications_send",
+            "notifications_delete",
+            "settings_view",
+            "settings_edit",
         ];
 
+        // 🔹 إنشاء الصلاحيات
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // 🔹 إنشاء دور المشرف Admin مع كل الصلاحيات
+        // 🔹 إنشاء الأدوار
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $userRole  = Role::firstOrCreate(['name' => 'user']);
+
+        // 🔹 المدير يحصل على جميع الصلاحيات
         $adminRole->givePermissionTo(Permission::all());
 
-        // 🔹 إنشاء دور المستخدم User مع صلاحية العرض فقط
-        $userRole = Role::firstOrCreate(['name' => 'user']);
-        $userRole->givePermissionTo(['can view']);
+        // 🔹 المستخدم بدون صلاحيات — يمكن تعديلها لاحقًا من لوحة التحكم
+        $userRole->syncPermissions([]);
 
-        // 🔹 إنشاء مشرف كامل
+        // 🔹 إنشاء حساب المدير الأساسي
         $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'], // يتحقق إذا كان موجود بالفعل
+            ['email' => 'admin@example.com'],
             [
                 'name' => 'Super Admin',
                 'phone' => '0123456789',
@@ -47,9 +77,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
 
-        // تعيين الدور Admin
         $admin->assignRole('admin');
 
-        $this->command->info('✅ Admin user created with all fields and full permissions!');
+        $this->command->info('✅ Roles & permissions seeded. Admin has all permissions, user has none.');
     }
 }

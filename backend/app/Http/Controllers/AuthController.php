@@ -128,7 +128,7 @@ class AuthController extends Controller
         $user = $request->user();
         if (!$user) return response()->json(['message' => 'Unauthorized'], 401);
 
-        if (!$user->hasRole('admin') && !$user->can('can view')) {
+        if (!$user->hasRole('admin') && !$user->can('users_view')) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -152,7 +152,7 @@ class AuthController extends Controller
     public function store(Request $request)
     {
         $admin = $request->user();
-        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('can create'))) {
+        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('users_create'))) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -200,7 +200,7 @@ class AuthController extends Controller
     public function updateUser(Request $request, $id)
     {
         $admin = $request->user();
-        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('can edit'))) {
+        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('users_edit'))) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -255,7 +255,7 @@ class AuthController extends Controller
     public function deleteUser(Request $request, $id)
     {
         $admin = $request->user();
-        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('can delete'))) {
+        if (!$admin || (!$admin->hasRole('admin') && !$admin->can('users_delete'))) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 

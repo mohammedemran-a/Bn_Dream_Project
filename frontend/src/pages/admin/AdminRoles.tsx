@@ -33,6 +33,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
+// ✅ استيراد ملف الترجمة
+import permissionsTranslations from "@/lang/permissions.json";
+
 interface Role {
   id: number;
   name: string;
@@ -65,8 +68,13 @@ const AdminRoles = () => {
         ]);
 
         setRoles(rolesRes);
+
+        // ✅ ترجمة أسماء الصلاحيات باستخدام ملف permissions.json
         setAvailablePermissions(
-          permissionsRes.map((p: string) => ({ id: p, label: p }))
+          permissionsRes.map((p: string) => ({
+            id: p,
+            label: permissionsTranslations[p] || p, // ترجمة أو الكلمة الأصلية كبديل
+          }))
         );
       } catch (error) {
         const err = error as { response?: { data?: { message?: string } } };

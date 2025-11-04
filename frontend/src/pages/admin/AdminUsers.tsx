@@ -74,7 +74,6 @@ const AdminUsers = () => {
         setRoles(rolesRes || []);
       } catch (error: unknown) {
         console.error(error);
-        // نتحقق إن كان error يحتوي على response
         const message =
           error instanceof Error
             ? error.message
@@ -147,7 +146,7 @@ const AdminUsers = () => {
   };
 
   // 🧩 التحقق من صلاحية العرض
-  if (!hasPermission("can view")) {
+  if (!hasPermission("users_view")) {
     return (
       <AdminLayout>
         <div className="flex flex-col items-center justify-center py-20">
@@ -171,14 +170,20 @@ const AdminUsers = () => {
             </p>
           </div>
 
-          {hasPermission("can create") && (
+          {/* ✅ عرض الـ Dialog إذا كان لديه صلاحية إنشاء أو تعديل */}
+          {(hasPermission("users_create") || hasPermission("users_edit")) && (
             <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 shadow-elegant">
-                  <Plus className="w-4 h-4" />
-                  {editingUser ? "تعديل المستخدم" : "إضافة مستخدم جديد"}
-                </Button>
-              </DialogTrigger>
+              {/* الزر الأساسي (إضافة) */}
+              {hasPermission("users_create") && (
+                <DialogTrigger asChild>
+                  <Button className="gap-2 shadow-elegant">
+                    <Plus className="w-4 h-4" />
+                    {editingUser ? "تعديل المستخدم" : "إضافة مستخدم جديد"}
+                  </Button>
+                </DialogTrigger>
+              )}
+
+              {/* محتوى الـ Dialog */}
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>
@@ -327,7 +332,7 @@ const AdminUsers = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right flex gap-2 justify-end">
-                        {hasPermission("can edit") && (
+                        {hasPermission("users_edit") && (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -337,7 +342,7 @@ const AdminUsers = () => {
                             <Pencil className="w-4 h-4" />
                           </Button>
                         )}
-                        {hasPermission("can delete") && (
+                        {hasPermission("users_delete") && (
                           <Button
                             size="sm"
                             variant="ghost"
