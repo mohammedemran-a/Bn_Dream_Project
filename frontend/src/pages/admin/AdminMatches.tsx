@@ -28,10 +28,10 @@ import {
   updateMatch,
   deleteMatch,
 } from "@/api/football_matches";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const AdminMatches = () => {
-  const { hasPermission } = useAuth();
+ const hasPermission = useAuthStore(state => state.hasPermission);
 
   const [matches, setMatches] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);

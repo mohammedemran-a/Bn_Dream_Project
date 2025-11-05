@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
 import Navbar from "@/components/layout/Navbar";
 import {
   Card,
@@ -14,53 +14,51 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { AxiosError } from "axios"; // ✅ تم إضافة الاستيراد هنا
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
 
-  // بيانات تسجيل الدخول
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-
-  // بيانات إنشاء حساب (بدون حقل تأكيد كلمة المرور)
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
   });
-
   const [loading, setLoading] = useState(false);
 
-  // تسجيل الدخول
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await login(loginData);
       toast.success("تم تسجيل الدخول بنجاح ✅");
-      navigate("/"); // الانتقال للوحة التحكم
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "فشل تسجيل الدخول ❌");
+      navigate("/");
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ message?: string }>;
+      const message = err.response?.data?.message || "فشل تسجيل الدخول ❌";
+      console.error(err);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  // إنشاء حساب جديد
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { name, email, phone, password } = registerData;
-      await register({ name, email, phone, password });
-
+      await register(registerData);
       toast.success("تم إنشاء الحساب بنجاح ✅");
-      navigate("/"); // الانتقال بعد التسجيل
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || "فشل إنشاء الحساب ❌");
+      navigate("/");
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ message?: string }>;
+      const message = err.response?.data?.message || "فشل إنشاء الحساب ❌";
+      console.error(err);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -95,76 +93,109 @@ const Auth = () => {
                   </TabsTrigger>
                 </TabsList>
 
-                {/* تبويب تسجيل الدخول */}
                 <TabsContent value="login">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
+                      <label className="block text-sm font-medium mb-2">
+                        البريد الإلكتروني
+                      </label>
                       <Input
                         placeholder="example@email.com"
                         value={loginData.email}
-                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, email: e.target.value })
+                        }
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">كلمة المرور</label>
+                      <label className="block text-sm font-medium mb-2">
+                        كلمة المرور
+                      </label>
                       <Input
                         type="password"
                         placeholder="••••••••"
                         value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, password: e.target.value })
+                        }
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full shadow-elegant" disabled={loading}>
+                    <Button
+                      type="submit"
+                      className="w-full shadow-elegant"
+                      disabled={loading}
+                    >
                       تسجيل الدخول
                     </Button>
                   </form>
                 </TabsContent>
 
-                {/* تبويب إنشاء حساب */}
                 <TabsContent value="register">
                   <form onSubmit={handleRegister} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">الاسم الكامل</label>
+                      <label className="block text-sm font-medium mb-2">
+                        الاسم الكامل
+                      </label>
                       <Input
                         placeholder="أدخل اسمك"
                         value={registerData.name}
-                        onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, name: e.target.value })
+                        }
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
+                      <label className="block text-sm font-medium mb-2">
+                        البريد الإلكتروني
+                      </label>
                       <Input
                         type="email"
                         placeholder="example@email.com"
                         value={registerData.email}
-                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, email: e.target.value })
+                        }
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
+                      <label className="block text-sm font-medium mb-2">
+                        رقم الهاتف
+                      </label>
                       <Input
                         type="tel"
                         placeholder="05xxxxxxxx"
                         value={registerData.phone}
-                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, phone: e.target.value })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">كلمة المرور</label>
+                      <label className="block text-sm font-medium mb-2">
+                        كلمة المرور
+                      </label>
                       <Input
                         type="password"
                         placeholder="••••••••"
                         value={registerData.password}
-                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            password: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full shadow-elegant" disabled={loading}>
+                    <Button
+                      type="submit"
+                      className="w-full shadow-elegant"
+                      disabled={loading}
+                    >
                       إنشاء حساب
                     </Button>
                   </form>

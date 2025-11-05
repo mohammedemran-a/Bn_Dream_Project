@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/contexts/CartContext";
-import { AuthProvider } from "@/context/AuthContext"; // ✅ استيراد سياق المصادقة الجديد
+import { useAuthStore } from "@/store/useAuthStore";
 
 import Index from "./pages/Index";
 import Rooms from "./pages/Rooms";
@@ -28,10 +29,16 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AuthProvider> {/* ✅ نغلف كل التطبيق بسياق المستخدم */}
+const App = () => {
+  const fetchUser = useAuthStore((state) => state.fetchUser);
+
+  useEffect(() => {
+    fetchUser(); // ✅ تحميل المستخدم عند بدء التطبيق
+  }, [fetchUser]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <CartProvider>
           <TooltipProvider>
             <Toaster />
@@ -64,9 +71,9 @@ const App = () => (
             </BrowserRouter>
           </TooltipProvider>
         </CartProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

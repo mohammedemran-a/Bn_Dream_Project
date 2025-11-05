@@ -19,9 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getBookings, updateBooking, deleteBooking } from "@/api/bookings";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
 
-// 🧩 تعريف نوع الحجز (TypeScript)
 interface Booking {
   id: number;
   user?: { name: string };
@@ -39,9 +38,8 @@ const AdminBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("الكل");
   const [loading, setLoading] = useState<boolean>(true);
-  const { hasPermission } = useAuth();
+  const hasPermission = useAuthStore(state => state.hasPermission);
 
-  // 🟢 تحميل الحجوزات من الـ API
   const fetchBookings = useCallback(async () => {
     if (!hasPermission("bookings_view")) return;
     try {
@@ -55,7 +53,6 @@ const AdminBookings = () => {
     }
   }, [statusFilter, hasPermission]);
 
-  // 🟠 تغيير حالة الحجز (تأكيد أو إلغاء)
   const changeStatus = async (id: number, newStatus: string) => {
     if (!hasPermission("bookings_edit")) return;
     try {
@@ -66,7 +63,6 @@ const AdminBookings = () => {
     }
   };
 
-  // 🔴 حذف الحجز
   const handleDelete = async (id: number) => {
     if (!hasPermission("bookings_delete")) return;
     if (!confirm("هل أنت متأكد من حذف هذا الحجز؟")) return;
@@ -82,7 +78,6 @@ const AdminBookings = () => {
     fetchBookings();
   }, [fetchBookings]);
 
-  // 🎨 تحديد لون الشارة بناءً على الحالة
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "مؤكد":
@@ -96,7 +91,6 @@ const AdminBookings = () => {
     }
   };
 
-  // ✋ التحقق من صلاحية العرض
   if (!hasPermission("bookings_view")) {
     return (
       <AdminLayout>
@@ -112,7 +106,6 @@ const AdminBookings = () => {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* العنوان */}
         <div>
           <h1 className="text-3xl font-bold mb-2">إدارة الحجوزات</h1>
           <p className="text-muted-foreground">متابعة جميع الحجوزات وتحديث حالتها</p>

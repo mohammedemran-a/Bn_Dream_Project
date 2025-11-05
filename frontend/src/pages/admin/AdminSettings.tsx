@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSettings, updateSettings } from '@/api/settings.js';
-import { useAuth } from "@/context/AuthContext"; // ✅ استدعاء سياق الصلاحيات
+import { useAuthStore } from "@/store/useAuthStore";
+
 
 const AdminSettings = () => {
-  const { hasPermission } = useAuth(); // ✅ Hook للتحقق من الصلاحيات
+  const hasPermission = useAuthStore(state => state.hasPermission);
   const [settings, setSettings] = useState({
     siteName: "",
     siteDescription: "",

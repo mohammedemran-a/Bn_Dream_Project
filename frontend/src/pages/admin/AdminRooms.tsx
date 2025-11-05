@@ -42,7 +42,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
+
+
 
 const categories = [
   "غرف خاصة",
@@ -53,7 +55,7 @@ const categories = [
 ];
 
 const AdminRooms = () => {
-  const { hasPermission } = useAuth();
+  const hasPermission = useAuthStore(state => state.hasPermission);
   const [rooms, setRooms] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);

@@ -15,14 +15,15 @@ import { getBookings } from "@/api/bookings";
 import { getAllOrders } from "@/api/orders";
 import { getUser } from "@/api/auth";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
+
 
 const Dashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { hasPermission } = useAuth(); // ✅ نستخدم السياق للتحقق من الصلاحيات
+  const hasPermission = useAuthStore(state => state.hasPermission);
 
   useEffect(() => {
     const fetchData = async () => {

@@ -14,7 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Truck, X, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getAllOrders, updateOrderStatus, deleteOrder } from "@/api/orders";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
+
+
 
 interface Order {
   id: number;
@@ -30,7 +32,7 @@ interface Order {
 }
 
 const AdminOrders = () => {
-  const { hasPermission } = useAuth();
+  const hasPermission = useAuthStore(state => state.hasPermission);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 

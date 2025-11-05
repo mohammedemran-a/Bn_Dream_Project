@@ -10,13 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "@/api/products";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
+
 
 const categories = ["البقالة", "القات", "الشيشة", "الكروت", "القهوة"];
 
 const AdminServices = () => {
-  const { hasPermission } = useAuth();
-
+const hasPermission = useAuthStore(state => state.hasPermission);
   const [products, setProducts] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);

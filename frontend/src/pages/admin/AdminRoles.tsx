@@ -33,7 +33,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import permissionsTranslations from "@/lang/permissions.json";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/useAuthStore";
+
+
 
 interface Role {
   id: number;
@@ -56,8 +58,7 @@ const AdminRoles = () => {
   const [roleName, setRoleName] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const { toast } = useToast();
-  const { hasPermission } = useAuth();
-
+  const hasPermission = useAuthStore(state => state.hasPermission);
   useEffect(() => {
     const fetchData = async () => {
       try {
