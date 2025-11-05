@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -26,8 +26,8 @@ import {
   CircleDot,
   PartyPopper,
 } from "lucide-react";
-import { getRooms } from "@/api/rooms.js";
-import { createBooking } from "@/api/bookings.js"; // 🟢 استيراد واجهة الحجز
+import { useRoomsStore } from "@/store/useRoomsStore"; // ✅ Zustand store
+import { createBooking } from "@/api/bookings.js"; 
 
 // 🟡 مكون عرض كل غرفة
 const RoomCard = ({ room, onBooked }) => {
@@ -42,24 +42,21 @@ const RoomCard = ({ room, onBooked }) => {
 
     try {
       const bookingData = {
-        user_id: 1, // 🔸 مؤقتًا، غيّر لاحقًا إلى المستخدم الحالي
+        user_id: 1,
         room_id: room.id,
-        check_in: new Date().toISOString().split("T")[0], // اليوم
+        check_in: new Date().toISOString().split("T")[0],
         check_out: new Date(Date.now() + 24 * 60 * 60 * 1000)
           .toISOString()
-          .split("T")[0], // الغد
+          .split("T")[0],
         guests: 1,
         total_price: room.price,
         status: "قيد المراجعة",
       };
 
-      const response = await createBooking(bookingData);
+      await createBooking(bookingData);
 
       alert("✅ تم إنشاء الحجز بنجاح!");
-      console.log("Booking response:", response);
-
-      // تحديث حالة الغرفة في الواجهة
-      onBooked(room.id);
+      onBooked(room.id); // تحديث الحالة في الواجهة
     } catch (error) {
       console.error("خطأ أثناء الحجز:", error);
       alert("⚠️ حدث خطأ أثناء تنفيذ الحجز.");
@@ -89,9 +86,7 @@ const RoomCard = ({ room, onBooked }) => {
 
       <CardHeader>
         <CardTitle className="text-2xl">{room.name}</CardTitle>
-        <CardDescription className="text-base">
-          {room.description}
-        </CardDescription>
+        <CardDescription className="text-base">{room.description}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -146,46 +141,27 @@ const RoomCard = ({ room, onBooked }) => {
 
 // 🟣 الصفحة الرئيسية للغرف
 const Rooms = () => {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { rooms, fetchRooms, updateRoomStatus, loading } = useRoomsStore();
 
   useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        const { data } = await getRooms();
-        setRooms(data);
-      } catch (err) {
-        console.error("حدث خطأ أثناء جلب البيانات:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRooms();
-  }, []);
+  }, [fetchRooms]);
 
-  // 🔵 تحديث حالة الغرفة بعد الحجز
   const handleRoomBooked = (roomId) => {
-    setRooms((prev) =>
-      prev.map((r) =>
-        r.id === roomId ? { ...r, status: "محجوز" } : r
-      )
-    );
+    updateRoomStatus(roomId, "محجوز");
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-xl">
-        جاري التحميل...
-      </div>
-    );
-  }
-
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen text-xl">
+  //       جاري التحميل...
+  //     </div>
+  //   );
+  // }
   const privateRooms = rooms.filter((r) => r.category === "غرف خاصة");
   const publicRooms = rooms.filter((r) => r.category === "غرف عامة");
   const eventHalls = rooms.filter((r) => r.category === "صالات المناسبات");
-  const playstationRooms = rooms.filter(
-    (r) => r.category === "غرف البلايستيشن"
-  );
+  const playstationRooms = rooms.filter((r) => r.category === "غرف البلايستيشن");
   const billiardRooms = rooms.filter((r) => r.category === "صالات البلياردو");
 
   return (
@@ -196,8 +172,7 @@ const Rooms = () => {
           <div className="container mx-auto text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold">غرفنا ومرافقنا</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              اختر من بين مجموعة متنوعة من الغرف والمرافق المجهزة بأفضل
-              الإمكانيات
+              اختر من بين مجموعة متنوعة من الغرف والمرافق المجهزة بأفضل الإمكانيات
             </p>
           </div>
         </section>

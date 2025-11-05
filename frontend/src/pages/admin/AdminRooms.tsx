@@ -1,28 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  getRooms,
-  createRoom,
-  updateRoom,
-  deleteRoom,
-} from "@/api/rooms";
+import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useRoomsStore } from "@/store/useRoomsStore";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
 import {
   Dialog,
@@ -30,21 +22,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
+  DialogDescription
 } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
-
-
 
 const categories = [
   "غرف خاصة",
@@ -54,12 +47,24 @@ const categories = [
   "صالات البلياردو",
 ];
 
+interface RoomForm {
+  category: string;
+  name: string;
+  price: string;
+  capacity: string;
+  status: string;
+  description: string;
+  features: string;
+  image: File | null;
+}
+
 const AdminRooms = () => {
+  const { rooms, fetchRooms, createRoom, updateRoom, deleteRoom } = useRoomsStore();
   const hasPermission = useAuthStore(state => state.hasPermission);
-  const [rooms, setRooms] = useState([]);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState(null);
-  const [form, setForm] = useState({
+  const [editingRoom, setEditingRoom] = useState<RoomForm & { id?: number; image_path?: string } | null>(null);
+  const [form, setForm] = useState<RoomForm>({
     category: "غرف خاصة",
     name: "",
     price: "",
@@ -70,22 +75,40 @@ const AdminRooms = () => {
     image: null,
   });
 
-  const fetchRooms = useCallback(async () => {
-    try {
-      const { data } = await getRooms();
-      setRooms(data);
-    } catch (error) {
-      console.error("خطأ أثناء جلب الغرف:", error);
-    }
-  }, []);
-
   useEffect(() => {
-    if (hasPermission("rooms_view")) {
-      fetchRooms();
-    }
+    if (hasPermission("rooms_view")) fetchRooms();
   }, [fetchRooms, hasPermission]);
 
-  const resetForm = useCallback(() => {
+  // 🟢 التعامل مع تغير الحقول
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setForm((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setForm((prev) => ({ ...prev, image: e.target.files![0] }));
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== null) formData.append(key, value as string | Blob);
+    });
+
+    if (editingRoom) {
+      if (!hasPermission("rooms_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
+      await updateRoom(editingRoom.id!, formData);
+    } else {
+      if (!hasPermission("rooms_create")) return alert("🚫 ليس لديك صلاحية الإضافة!");
+      await createRoom(formData);
+    }
+
+    setIsDialogOpen(false);
+    setEditingRoom(null);
     setForm({
       category: "غرف خاصة",
       name: "",
@@ -96,48 +119,26 @@ const AdminRooms = () => {
       features: "",
       image: null,
     });
-  }, []);
-
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
-  const handleFileChange = (e) => {
-    setForm((prev) => ({ ...prev, image: e.target.files[0] }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (value !== null) formData.append(key, value);
+  const handleEdit = (room: typeof rooms[number]) => {
+    setEditingRoom({
+      id: room.id,
+      category: room.category,
+      name: room.name,
+      price: room.price.toString(),
+      capacity: room.capacity.toString(),
+      status: room.status,
+      description: room.description,
+      features: room.features,
+      image: null,
+      image_path: room.image_path,
     });
-
-    try {
-      if (editingRoom) {
-        if (!hasPermission("rooms_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
-        await updateRoom(editingRoom.id, formData);
-      } else {
-        if (!hasPermission("rooms_create")) return alert("🚫 ليس لديك صلاحية الإضافة!");
-        await createRoom(formData);
-      }
-      await fetchRooms();
-      setIsDialogOpen(false);
-      setEditingRoom(null);
-      resetForm();
-    } catch (error) {
-      console.error("خطأ أثناء الحفظ:", error);
-    }
-  };
-
-  const handleEdit = (room) => {
-    if (!hasPermission("rooms_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
-    setEditingRoom(room);
     setForm({
       category: room.category,
       name: room.name,
-      price: room.price,
-      capacity: room.capacity,
+      price: room.price.toString(),
+      capacity: room.capacity.toString(),
       status: room.status,
       description: room.description,
       features: room.features,
@@ -146,23 +147,13 @@ const AdminRooms = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = useCallback(
-    async (id) => {
-      if (!hasPermission("rooms_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
-      if (confirm("هل أنت متأكد من حذف هذه الغرفة؟")) {
-        try {
-          await deleteRoom(id);
-          await fetchRooms();
-        } catch (error) {
-          console.error("خطأ أثناء الحذف:", error);
-        }
-      }
-    },
-    [fetchRooms, hasPermission]
-  );
+  const handleDelete = async (id: number) => {
+    if (!hasPermission("rooms_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
+    if (confirm("هل أنت متأكد من حذف هذه الغرفة؟")) await deleteRoom(id);
+  };
 
-  const RoomsTable = ({ category }) => {
-    const filtered = rooms.filter((room) => room.category === category);
+  const RoomsTable = ({ category }: { category: string }) => {
+    const filtered = rooms.filter((r) => r.category === category);
     return (
       <Table>
         <TableHeader>
@@ -201,12 +192,7 @@ const AdminRooms = () => {
                     </Button>
                   )}
                   {hasPermission("rooms_delete") && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => handleDelete(room.id)}
-                    >
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(room.id!)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
@@ -242,16 +228,23 @@ const AdminRooms = () => {
                   <Button
                     className="gap-2"
                     onClick={() => {
-                      resetForm();
                       setEditingRoom(null);
+                      setForm({
+                        category: "غرف خاصة",
+                        name: "",
+                        price: "",
+                        capacity: "",
+                        status: "متاح",
+                        description: "",
+                        features: "",
+                        image: null,
+                      });
                     }}
                   >
-                    <Plus className="w-4 h-4" />
-                    إضافة غرفة جديدة
+                    <Plus className="w-4 h-4" /> إضافة غرفة جديدة
                   </Button>
                 )}
               </DialogTrigger>
-
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>
@@ -263,7 +256,6 @@ const AdminRooms = () => {
                       : "أدخل بيانات الغرفة الجديدة ثم اضغط حفظ"}
                   </DialogDescription>
                 </DialogHeader>
-
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div>
                     <Label>التصنيف</Label>
@@ -292,32 +284,17 @@ const AdminRooms = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">السعر (ريال)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={form.price}
-                        onChange={handleChange}
-                        required
-                      />
+                      <Input id="price" type="number" value={form.price} onChange={handleChange} required />
                     </div>
                     <div>
                       <Label htmlFor="capacity">عدد الأشخاص</Label>
-                      <Input
-                        id="capacity"
-                        type="number"
-                        value={form.capacity}
-                        onChange={handleChange}
-                      />
+                      <Input id="capacity" type="number" value={form.capacity} onChange={handleChange} />
                     </div>
                   </div>
 
                   <div>
                     <Label htmlFor="description">الوصف</Label>
-                    <Textarea
-                      id="description"
-                      value={form.description}
-                      onChange={handleChange}
-                    />
+                    <Textarea id="description" value={form.description} onChange={handleChange} />
                   </div>
 
                   <div>
@@ -338,11 +315,7 @@ const AdminRooms = () => {
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       إلغاء
                     </Button>
                     <Button type="submit">{editingRoom ? "تحديث" : "حفظ"}</Button>
@@ -361,7 +334,6 @@ const AdminRooms = () => {
               </TabsTrigger>
             ))}
           </TabsList>
-
           {categories.map((cat) => (
             <TabsContent key={cat} value={cat}>
               <Card>

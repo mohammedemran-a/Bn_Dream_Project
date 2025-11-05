@@ -39,7 +39,7 @@ const Dashboard = () => {
         setUsers(userRes?.data ? [userRes.data] : []);
       } catch (error) {
         console.error("حدث خطأ أثناء تحميل البيانات:", error);
-        toast.error("فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا 🔐");
+        toast.error("فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا");
         localStorage.removeItem("token");
         window.location.href = "/auth";
       } finally {
@@ -63,12 +63,11 @@ const Dashboard = () => {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="p-10 text-center text-lg">⏳ جاري تحميل البيانات...</div>
+        <div className="p-10 text-center text-lg">جاري تحميل البيانات...</div>
       </AdminLayout>
     );
   }
 
-  // 💰 حساب الإيرادات الإجمالية
   const totalRevenue = orders.reduce(
     (sum, o) => sum + (parseFloat(o.amount) || 0),
     0

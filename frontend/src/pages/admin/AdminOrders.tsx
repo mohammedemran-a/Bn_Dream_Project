@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,56 +13,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Check, Truck, X, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getAllOrders, updateOrderStatus, deleteOrder } from "@/api/orders";
+import { useOrdersStore } from "@/store/useOrdersStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
-
-
-interface Order {
-  id: number;
-  user: { name: string; phone?: string } | null;
-  total: number;
-  status: string;
-  created_at: string;
-  products: {
-    id: number;
-    name: string;
-    pivot: { quantity: number; price: number };
-  }[];
-}
-
 const AdminOrders = () => {
-  const hasPermission = useAuthStore(state => state.hasPermission);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const data = await getAllOrders();
-      setOrders(data);
-    } catch (error) {
-      console.error(error);
-      toast.error("حدث خطأ أثناء جلب الطلبات");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const hasPermission = useAuthStore((state) => state.hasPermission);
+  const { orders, loading, fetchOrders, updateStatus, removeOrder } = useOrdersStore();
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     if (!hasPermission("orders_process")) {
       toast.error("🚫 ليس لديك صلاحية لمعالجة الطلبات");
       return;
     }
-
-    try {
-      await updateOrderStatus(id, newStatus);
-      toast.success("تم تحديث حالة الطلب ✅");
-      fetchOrders();
-    } catch (error) {
-      console.error(error);
-      toast.error("فشل تحديث حالة الطلب ❌");
-    }
+    await updateStatus(id, newStatus);
   };
 
   const handleDelete = async (id: number) => {
@@ -72,23 +35,14 @@ const AdminOrders = () => {
     }
 
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا الطلب نهائيًا؟")) return;
-    try {
-      await deleteOrder(id);
-      toast.success("تم حذف الطلب بنجاح ✅");
-      fetchOrders();
-    } catch (error) {
-      console.error(error);
-      toast.error("فشل حذف الطلب ❌");
-    }
+    await removeOrder(id);
   };
 
   useEffect(() => {
     if (hasPermission("orders_view")) {
       fetchOrders();
-    } else {
-      setLoading(false);
     }
-  }, [hasPermission]);
+  }, [fetchOrders, hasPermission]);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -105,7 +59,6 @@ const AdminOrders = () => {
     }
   };
 
-  // 🚫 في حال عدم وجود صلاحية عرض الطلبات
   if (!hasPermission("orders_view")) {
     return (
       <AdminLayout>
@@ -193,8 +146,7 @@ const AdminOrders = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className="flex gap-1 justify-center">
-                            {/* 🟢 صلاحية معالجة الطلبات */}
+                          <div className="flex gap-1 justify-center items-center">
                             {hasPermission("orders_process") && (
                               <>
                                 <Button
@@ -235,7 +187,6 @@ const AdminOrders = () => {
                               </>
                             )}
 
-                            {/* 🔴 صلاحية حذف الطلب */}
                             {hasPermission("orders_delete") && (
                               <Button
                                 size="sm"

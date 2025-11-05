@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,8 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/contexts/CartContext";
-import { useAuthStore } from "@/store/useAuthStore";
 
+// صفحات المستخدم
 import Index from "./pages/Index";
 import Rooms from "./pages/Rooms";
 import Services from "./pages/Services";
@@ -16,6 +16,8 @@ import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import Bot from "./pages/Bot";
 import NotFound from "./pages/NotFound";
+
+// صفحات الإدارة
 import Dashboard from "./pages/admin/Dashboard";
 import AdminRooms from "./pages/admin/AdminRooms";
 import AdminBookings from "./pages/admin/AdminBookings";
@@ -27,14 +29,27 @@ import AdminRoles from "./pages/admin/AdminRoles";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 
+// Zustand Store
+import { useAuthStore } from "@/store/useAuthStore";
+
 const queryClient = new QueryClient();
 
 const App = () => {
   const fetchUser = useAuthStore((state) => state.fetchUser);
+  const loading = useAuthStore((state) => state.loading);
 
+  // جلب بيانات المستخدم عند تحميل التطبيق
   useEffect(() => {
-    fetchUser(); // ✅ تحميل المستخدم عند بدء التطبيق
-  }, [fetchUser]);
+    fetchUser();
+  }, [fetchUser]); // ✅ أضفنا fetchUser كمصفوفة اعتماديات
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-xl">
+        جاري التحميل...
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -45,6 +60,7 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
+                {/* صفحات المستخدم */}
                 <Route path="/" element={<Index />} />
                 <Route path="/rooms" element={<Rooms />} />
                 <Route path="/services" element={<Services />} />
@@ -53,7 +69,7 @@ const App = () => {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/auth" element={<Auth />} />
 
-                {/* Admin Routes */}
+                {/* صفحات الإدارة */}
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/admin/rooms" element={<AdminRooms />} />
                 <Route path="/admin/bookings" element={<AdminBookings />} />
@@ -65,7 +81,7 @@ const App = () => {
                 <Route path="/admin/notifications" element={<AdminNotifications />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
 
-                {/* Catch-All */}
+                {/* صفحة غير موجودة */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

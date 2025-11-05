@@ -14,12 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { AxiosError } from "axios"; // ✅ تم إضافة الاستيراد هنا
+import { AxiosError } from "axios";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
-  const register = useAuthStore((state) => state.register);
+  const { login, register } = useAuthStore();
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
@@ -34,14 +33,12 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(loginData);
+      await login(loginData); // استخدم Zustand
       toast.success("تم تسجيل الدخول بنجاح ✅");
       navigate("/");
     } catch (error: unknown) {
       const err = error as AxiosError<{ message?: string }>;
-      const message = err.response?.data?.message || "فشل تسجيل الدخول ❌";
-      console.error(err);
-      toast.error(message);
+      toast.error(err.response?.data?.message || "فشل تسجيل الدخول ❌");
     } finally {
       setLoading(false);
     }
@@ -51,14 +48,12 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(registerData);
+      await register(registerData); // استخدم Zustand
       toast.success("تم إنشاء الحساب بنجاح ✅");
       navigate("/");
     } catch (error: unknown) {
       const err = error as AxiosError<{ message?: string }>;
-      const message = err.response?.data?.message || "فشل إنشاء الحساب ❌";
-      console.error(err);
-      toast.error(message);
+      toast.error(err.response?.data?.message || "فشل إنشاء الحساب ❌");
     } finally {
       setLoading(false);
     }
@@ -183,10 +178,7 @@ const Auth = () => {
                         placeholder="••••••••"
                         value={registerData.password}
                         onChange={(e) =>
-                          setRegisterData({
-                            ...registerData,
-                            password: e.target.value,
-                          })
+                          setRegisterData({ ...registerData, password: e.target.value })
                         }
                         required
                       />

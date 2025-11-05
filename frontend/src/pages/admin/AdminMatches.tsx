@@ -1,42 +1,26 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  getMatches,
-  createMatch,
-  updateMatch,
-  deleteMatch,
-} from "@/api/football_matches";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useMatchesStore, Match } from "@/store/useMatchesStore";
 
 const AdminMatches = () => {
- const hasPermission = useAuthStore(state => state.hasPermission);
+  const hasPermission = useAuthStore(state => state.hasPermission);
 
-  const [matches, setMatches] = useState([]);
+  const { matches, fetchMatches, createMatch, updateMatch, deleteMatch } = useMatchesStore();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingMatch, setEditingMatch] = useState(null);
-  const [formData, setFormData] = useState({
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
+  const [formData, setFormData] = useState<Partial<Match>>({
     team1: "",
     team2: "",
     date: "",
@@ -47,21 +31,10 @@ const AdminMatches = () => {
   });
 
   useEffect(() => {
-    if (hasPermission("matches_view")) {
-      fetchMatches();
-    }
-  }, [hasPermission]);
+    if (hasPermission("matches_view")) fetchMatches();
+  }, [hasPermission, fetchMatches]);
 
-  const fetchMatches = async () => {
-    try {
-      const response = await getMatches();
-      setMatches(response.data);
-    } catch (error) {
-      console.error("❌ خطأ أثناء جلب المباريات:", error);
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (editingMatch) {
@@ -78,30 +51,17 @@ const AdminMatches = () => {
     }
   };
 
-  const handleEdit = (match) => {
+  const handleEdit = (match: Match) => {
     if (!hasPermission("matches_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
     setEditingMatch(match);
-    setFormData({
-      team1: match.team1,
-      team2: match.team2,
-      date: match.date,
-      time: match.time,
-      channel: match.channel,
-      result: match.result || "",
-      status: match.status,
-    });
+    setFormData({ ...match });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (!hasPermission("matches_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
     if (!window.confirm("هل أنت متأكد من حذف المباراة؟")) return;
-    try {
-      await deleteMatch(id);
-      fetchMatches();
-    } catch (error) {
-      console.error("❌ خطأ أثناء الحذف:", error);
-    }
+    await deleteMatch(id);
   };
 
   const handleCloseDialog = () => {
@@ -141,10 +101,7 @@ const AdminMatches = () => {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 {hasPermission("matches_create") && (
-                  <Button
-                    className="gap-2 shadow-elegant"
-                    onClick={() => setEditingMatch(null)}
-                  >
+                  <Button className="gap-2 shadow-elegant" onClick={() => setEditingMatch(null)}>
                     <Plus className="w-4 h-4" />
                     إضافة مباراة
                   </Button>
@@ -153,9 +110,7 @@ const AdminMatches = () => {
 
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingMatch ? "تعديل المباراة" : "إضافة مباراة جديدة"}
-                  </DialogTitle>
+                  <DialogTitle>{editingMatch ? "تعديل المباراة" : "إضافة مباراة جديدة"}</DialogTitle>
                   <DialogDescription>
                     {editingMatch
                       ? "قم بتعديل بيانات المباراة ثم اضغط تحديث"
@@ -169,10 +124,8 @@ const AdminMatches = () => {
                       <Label htmlFor="team1">الفريق الأول</Label>
                       <Input
                         id="team1"
-                        value={formData.team1}
-                        onChange={(e) =>
-                          setFormData({ ...formData, team1: e.target.value })
-                        }
+                        value={formData.team1 || ""}
+                        onChange={(e) => setFormData({ ...formData, team1: e.target.value })}
                         required
                       />
                     </div>
@@ -180,10 +133,8 @@ const AdminMatches = () => {
                       <Label htmlFor="team2">الفريق الثاني</Label>
                       <Input
                         id="team2"
-                        value={formData.team2}
-                        onChange={(e) =>
-                          setFormData({ ...formData, team2: e.target.value })
-                        }
+                        value={formData.team2 || ""}
+                        onChange={(e) => setFormData({ ...formData, team2: e.target.value })}
                         required
                       />
                     </div>
@@ -195,10 +146,8 @@ const AdminMatches = () => {
                       <Input
                         id="date"
                         type="date"
-                        value={formData.date}
-                        onChange={(e) =>
-                          setFormData({ ...formData, date: e.target.value })
-                        }
+                        value={formData.date || ""}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         required
                       />
                     </div>
@@ -207,10 +156,8 @@ const AdminMatches = () => {
                       <Input
                         id="time"
                         type="time"
-                        value={formData.time}
-                        onChange={(e) =>
-                          setFormData({ ...formData, time: e.target.value })
-                        }
+                        value={formData.time || ""}
+                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                         required
                       />
                     </div>
@@ -220,10 +167,8 @@ const AdminMatches = () => {
                     <Label htmlFor="channel">القناة الناقلة</Label>
                     <Input
                       id="channel"
-                      value={formData.channel}
-                      onChange={(e) =>
-                        setFormData({ ...formData, channel: e.target.value })
-                      }
+                      value={formData.channel || ""}
+                      onChange={(e) => setFormData({ ...formData, channel: e.target.value })}
                       required
                     />
                   </div>
@@ -233,10 +178,8 @@ const AdminMatches = () => {
                     <Input
                       id="result"
                       placeholder="مثال: 2-1"
-                      value={formData.result}
-                      onChange={(e) =>
-                        setFormData({ ...formData, result: e.target.value })
-                      }
+                      value={formData.result || ""}
+                      onChange={(e) => setFormData({ ...formData, result: e.target.value })}
                     />
                   </div>
 
@@ -244,9 +187,9 @@ const AdminMatches = () => {
                     <Label htmlFor="status">الحالة</Label>
                     <select
                       id="status"
-                      value={formData.status}
+                      value={formData.status || "قادمة"}
                       onChange={(e) =>
-                        setFormData({ ...formData, status: e.target.value })
+                        setFormData({ ...formData, status: e.target.value as "قادمة" | "جارية" | "منتهية" })
                       }
                       className="border rounded-md w-full p-2"
                     >
@@ -257,9 +200,7 @@ const AdminMatches = () => {
                   </div>
 
                   <div className="flex gap-2 justify-end">
-                    <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                      إلغاء
-                    </Button>
+                    <Button type="button" variant="outline" onClick={handleCloseDialog}>إلغاء</Button>
                     <Button type="submit">{editingMatch ? "تحديث" : "حفظ"}</Button>
                   </div>
                 </form>
@@ -287,7 +228,6 @@ const AdminMatches = () => {
                     <TableHead>العمليات</TableHead>
                   </TableRow>
                 </TableHeader>
-
                 <TableBody>
                   {matches.map((match) => (
                     <TableRow key={match.id} className="hover:bg-accent/5">
@@ -296,39 +236,16 @@ const AdminMatches = () => {
                       <TableCell>{match.date}</TableCell>
                       <TableCell>{match.time}</TableCell>
                       <TableCell>{match.channel}</TableCell>
+                      <TableCell>{match.result || <span className="text-muted-foreground">-</span>}</TableCell>
                       <TableCell>
-                        {match.result || <span className="text-muted-foreground">-</span>}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            match.status === "منتهية"
-                              ? "outline"
-                              : match.status === "جارية"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
+                        <Badge variant={match.status === "منتهية" ? "outline" : match.status === "جارية" ? "default" : "secondary"}>
                           {match.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2 justify-end">
-                          {hasPermission("matches_edit") && (
-                            <Button size="sm" variant="ghost" onClick={() => handleEdit(match)}>
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {hasPermission("matches_delete") && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => handleDelete(match.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
+                          {hasPermission("matches_edit") && <Button size="sm" variant="ghost" onClick={() => handleEdit(match)}><Pencil className="w-4 h-4" /></Button>}
+                          {hasPermission("matches_delete") && <Button size="sm" variant="ghost" className="hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(match.id)}><Trash2 className="w-4 h-4" /></Button>}
                         </div>
                       </TableCell>
                     </TableRow>

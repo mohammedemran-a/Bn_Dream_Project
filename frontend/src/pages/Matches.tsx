@@ -14,19 +14,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, Calendar, Tv } from "lucide-react";
-import { getMatches } from "@/api/football_matches";
-import {
-  postPrediction,
-  getUserPredictions,
-  getLeaderboard,
-} from "@/api/predictions";
+import { useMatchesStore, Prediction } from "@/store/useMatchesStore";
 
 const Matches = () => {
-  const [matches, setMatches] = useState([]);
+  const {
+    matches,
+    fetchMatches,
+    predictions,
+    fetchUserPredictions,
+    postPrediction,
+    leaderboard,
+    fetchLeaderboard,
+  } = useMatchesStore();
+
   const [loading, setLoading] = useState(true);
-  const [predictions, setPredictions] = useState({});
   const [userId, setUserId] = useState<number | null>(null);
-  const [leaderboard, setLeaderboard] = useState([]);
 
   // 🧩 تحميل user_id من localStorage
   useEffect(() => {
@@ -34,83 +36,47 @@ const Matches = () => {
     if (storedUserId) setUserId(Number(storedUserId));
   }, []);
 
-  // 🟢 جلب المباريات + توقعات المستخدم + المتصدرين
+  // 🟢 جلب البيانات
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await getMatches();
-        setMatches(response.data);
+      setLoading(true);
+      await fetchMatches();
+      if (userId) await fetchUserPredictions(userId);
+      await fetchLeaderboard();
+      setLoading(false);
+    };
+    fetchData();
+  }, [userId, fetchMatches, fetchUserPredictions, fetchLeaderboard]);
 
-        // جلب توقعات المستخدم
-        if (userId) {
-          const userPreds = await getUserPredictions(userId);
-          const formatted = {};
-          userPreds.data.forEach((p) => {
-            formatted[p.football_match_id] = {
-              team1: p.team1_score.toString(),
-              team2: p.team2_score.toString(),
-              submitted: true, // 🔒 تم إرسال التوقع مسبقًا
-            };
-          });
-          setPredictions(formatted);
-        }
-
-        // جلب المتصدرين
-        const leaders = await getLeaderboard();
-        setLeaderboard(leaders.data);
-      } catch (error) {
-        console.error("❌ خطأ أثناء جلب البيانات:", error);
-      } finally {
-        setLoading(false);
-      }
+  // ⚙️ تغيير القيم في التوقع
+  const handlePredictionChange = (
+    matchId: number,
+    team: "team1" | "team2",
+    value: string
+  ) => {
+    const currentPrediction: Prediction = predictions[matchId] ?? {
+      team1: "",
+      team2: "",
+      submitted: false,
     };
 
-    fetchData();
-  }, [userId]);
+    if (currentPrediction.submitted) return;
 
-  // ⚙️ تغيير القيم في التوقعات
-  const handlePredictionChange = (matchId, team, value) => {
-    if (predictions[matchId]?.submitted) return; // 🔒 لا يمكن التعديل بعد الإرسال
-
-    setPredictions((prev) => ({
-      ...prev,
-      [matchId]: {
-        ...prev[matchId],
-        [team]: value,
+    useMatchesStore.setState({
+      predictions: {
+        ...predictions,
+        [matchId]: {
+          ...currentPrediction,
+          [team]: value,
+        },
       },
-    }));
+    });
   };
 
   // 🟢 إرسال التوقع
-  const handleSubmitPrediction = async (matchId) => {
-    if (!userId) {
-      alert("الرجاء تسجيل الدخول أولاً");
-      return;
-    }
-
-    const prediction = predictions[matchId];
-    if (prediction?.team1 && prediction?.team2) {
-      try {
-        await postPrediction({
-          user_id: userId,
-          football_match_id: matchId,
-          team1_score: Number(prediction.team1),
-          team2_score: Number(prediction.team2),
-        });
-
-        alert("✅ تم إرسال توقعك بنجاح!");
-        // 🔒 قفل التوقع بعد الإرسال
-        setPredictions((prev) => ({
-          ...prev,
-          [matchId]: { ...prev[matchId], submitted: true },
-        }));
-      } catch (error) {
-        console.error("❌ خطأ أثناء إرسال التوقع:", error);
-        alert(error.response?.data?.message || "حدث خطأ أثناء إرسال التوقع");
-      }
-    } else {
-      alert("⚠️ الرجاء إدخال النتيجة كاملة");
-    }
+  const handleSubmitPrediction = async (matchId: number) => {
+    if (!userId) return alert("🚫 يجب تسجيل الدخول أولاً");
+    await postPrediction(userId, matchId);
   };
 
   if (loading) {
@@ -128,7 +94,7 @@ const Matches = () => {
       <Navbar />
 
       <main className="pt-16">
-        {/* Page Header */}
+        {/* 🏆 مقدمة الصفحة */}
         <section className="bg-gradient-to-b from-primary/10 to-background py-20 px-4">
           <div className="container mx-auto text-center space-y-4 animate-fade-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
@@ -142,7 +108,7 @@ const Matches = () => {
           </div>
         </section>
 
-        {/* Matches Grid */}
+        {/* ⚽ بطاقات المباريات */}
         <section className="py-12 px-4">
           <div className="container mx-auto">
             {matches.length === 0 ? (
@@ -152,8 +118,9 @@ const Matches = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {matches.map((match, index) => {
-                  const userPred = predictions[match.id] || {};
-                  const isSubmitted = userPred.submitted;
+                  const prediction: Prediction =
+                    predictions[match.id] ?? { team1: "", team2: "", submitted: false };
+                  const isSubmitted = prediction.submitted;
 
                   return (
                     <Card
@@ -204,21 +171,15 @@ const Matches = () => {
                                 placeholder="0"
                                 min="0"
                                 className="w-16 text-center text-xl font-bold"
-                                value={userPred.team1 || ""}
+                                value={prediction.team1}
                                 onChange={(e) =>
-                                  handlePredictionChange(
-                                    match.id,
-                                    "team1",
-                                    e.target.value
-                                  )
+                                  handlePredictionChange(match.id, "team1", e.target.value)
                                 }
                                 disabled={isSubmitted}
                               />
                             </div>
 
-                            <div className="text-2xl font-bold text-primary">
-                              -
-                            </div>
+                            <div className="text-2xl font-bold text-primary">-</div>
 
                             <div className="text-center">
                               <p className="text-sm text-muted-foreground mb-2">
@@ -229,13 +190,9 @@ const Matches = () => {
                                 placeholder="0"
                                 min="0"
                                 className="w-16 text-center text-xl font-bold"
-                                value={userPred.team2 || ""}
+                                value={prediction.team2}
                                 onChange={(e) =>
-                                  handlePredictionChange(
-                                    match.id,
-                                    "team2",
-                                    e.target.value
-                                  )
+                                  handlePredictionChange(match.id, "team2", e.target.value)
                                 }
                                 disabled={isSubmitted}
                               />
@@ -259,7 +216,7 @@ const Matches = () => {
           </div>
         </section>
 
-        {/* 🏆 Leaderboard Section */}
+        {/* 🏆 المتصدرين */}
         <section className="py-12 px-4 bg-muted/30">
           <div className="container mx-auto">
             <div className="text-center mb-8 animate-fade-in">

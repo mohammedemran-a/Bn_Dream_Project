@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,36 +8,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { getProducts, createProduct, updateProduct, deleteProduct } from "@/api/products";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/useAuthStore";
-
+import { useProductStore } from "@/store/useProductStore";
 
 const categories = ["البقالة", "القات", "الشيشة", "الكروت", "القهوة"];
 
 const AdminServices = () => {
-const hasPermission = useAuthStore(state => state.hasPermission);
-  const [products, setProducts] = useState([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const hasPermission = useAuthStore((state) => state.hasPermission);
 
-  const [form, setForm] = useState({
-    type: "البقالة",
-    name: "",
-    price: "",
-    stock: "",
-    category: "",
-    image: null,
-  });
-
-  const fetchProducts = useCallback(async () => {
-    try {
-      const { data } = await getProducts();
-      setProducts(data);
-    } catch (error) {
-      console.error("خطأ أثناء جلب المنتجات:", error);
-    }
-  }, []);
+  const {
+    products,
+    form,
+    editingProduct,
+    isDialogOpen,
+    fetchProducts,
+    setIsDialogOpen,
+    setEditingProduct,
+    setForm,
+    updateFormField,
+    resetForm,
+    saveProduct,
+    deleteProductById,
+  } = useProductStore();
 
   useEffect(() => {
     if (hasPermission("services_view")) {
@@ -45,80 +38,37 @@ const hasPermission = useAuthStore(state => state.hasPermission);
     }
   }, [fetchProducts, hasPermission]);
 
-  const resetForm = useCallback(() => {
-    setForm({
-      type: "البقالة",
-      name: "",
-      price: "",
-      stock: "",
-      category: "",
-      image: null,
-    });
-  }, []);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    updateFormField(e.target.id as keyof typeof form, e.target.value);
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.id]: e.target.value }));
-  };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    updateFormField("image", e.target.files?.[0] ?? null);
 
-  const handleFileChange = (e) => {
-    setForm((prev) => ({ ...prev, image: e.target.files[0] }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (value !== null) formData.append(key, value);
-    });
-
-    try {
-      if (editingProduct) {
-        if (!hasPermission("services_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
-        await updateProduct(editingProduct.id, formData);
-      } else {
-        if (!hasPermission("services_create")) return alert("🚫 ليس لديك صلاحية الإضافة!");
-        await createProduct(formData);
-      }
-
-      await fetchProducts();
-      setIsDialogOpen(false);
-      setEditingProduct(null);
-      resetForm();
-    } catch (error) {
-      console.error("خطأ أثناء الحفظ:", error);
-    }
-  };
-
-  const handleEdit = (product) => {
+  const handleEdit = (product: typeof editingProduct) => {
     if (!hasPermission("services_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
     setEditingProduct(product);
-    setForm({
-      type: product.type,
-      name: product.name,
-      price: product.price,
-      stock: product.stock,
-      category: product.category,
-      image: null,
-    });
+    if (product) {
+      setForm({
+        type: product.type,
+        name: product.name,
+        price: String(product.price),
+        stock: String(product.stock),
+        category: product.category,
+        image: null,
+      });
+    }
     setIsDialogOpen(true);
   };
 
   const handleDelete = useCallback(
-    async (id) => {
+    async (id: number) => {
       if (!hasPermission("services_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
-      if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
-        try {
-          await deleteProduct(id);
-          await fetchProducts();
-        } catch (error) {
-          console.error("خطأ أثناء الحذف:", error);
-        }
-      }
+      await deleteProductById(id);
     },
-    [fetchProducts, hasPermission]
+    [deleteProductById, hasPermission]
   );
 
-  const ProductsTable = ({ type }) => {
+  const ProductsTable = ({ type }: { type: string }) => {
     const filtered = products.filter((p) => p.type === type);
     return (
       <Table>
@@ -137,11 +87,9 @@ const hasPermission = useAuthStore(state => state.hasPermission);
             <TableRow key={product.id}>
               <TableCell>
                 <img
-                  src={
-                    product.image?.startsWith("http")
-                      ? product.image
-                      : `http://127.0.0.1:8000/storage/${product.image}`
-                  }
+                  src={product.image?.startsWith("http")
+                    ? product.image
+                    : `http://127.0.0.1:8000/storage/${product.image}`}
                   alt={product.name}
                   className="w-16 h-16 object-cover rounded border"
                 />
@@ -155,11 +103,7 @@ const hasPermission = useAuthStore(state => state.hasPermission);
               <TableCell>
                 <div className="flex gap-2 justify-end">
                   {hasPermission("services_edit") && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(product)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(product)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
                   )}
@@ -221,7 +165,6 @@ const hasPermission = useAuthStore(state => state.hasPermission);
                   </Button>
                 )}
               </DialogTrigger>
-
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>
@@ -229,18 +172,24 @@ const hasPermission = useAuthStore(state => state.hasPermission);
                   </DialogTitle>
                   <DialogDescription>
                     {editingProduct
-                      ? "قم بتعديل بيانات المنتج ثم اضغط تحديث"
-                      : "أدخل بيانات المنتج الجديد ثم اضغط حفظ"}
+                      ? "قم بتعديل بيانات المنتج الحالية ثم اضغط تحديث."
+                      : "املأ بيانات المنتج الجديد ثم اضغط حفظ."}
                   </DialogDescription>
                 </DialogHeader>
 
-                <form className="space-y-4" onSubmit={handleSubmit}>
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    saveProduct();
+                  }}
+                >
                   <div>
                     <Label>التصنيف</Label>
                     <select
                       className="w-full border rounded-md p-2"
                       value={form.type}
-                      onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
+                      onChange={(e) => updateFormField("type", e.target.value)}
                     >
                       {categories.map((cat) => (
                         <option key={cat} value={cat}>
@@ -252,53 +201,28 @@ const hasPermission = useAuthStore(state => state.hasPermission);
 
                   <div>
                     <Label htmlFor="name">اسم المنتج</Label>
-                    <Input
-                      id="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      required
-                    />
+                    <Input id="name" value={form.name} onChange={handleChange} required />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">السعر (ريال)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        value={form.price}
-                        onChange={handleChange}
-                        required
-                      />
+                      <Input id="price" type="number" value={form.price} onChange={handleChange} required />
                     </div>
                     <div>
                       <Label htmlFor="stock">الكمية</Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        value={form.stock}
-                        onChange={handleChange}
-                      />
+                      <Input id="stock" type="number" value={form.stock} onChange={handleChange} />
                     </div>
                   </div>
 
                   <div>
                     <Label htmlFor="category">الفئة</Label>
-                    <Input
-                      id="category"
-                      value={form.category}
-                      onChange={handleChange}
-                    />
+                    <Input id="category" value={form.category} onChange={handleChange} />
                   </div>
 
                   <div>
                     <Label htmlFor="image">صورة المنتج</Label>
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
+                    <Input id="image" type="file" accept="image/*" onChange={handleFileChange} />
                     {editingProduct?.image && (
                       <img
                         src={`http://127.0.0.1:8000/storage/${editingProduct.image}`}
@@ -309,16 +233,10 @@ const hasPermission = useAuthStore(state => state.hasPermission);
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       إلغاء
                     </Button>
-                    <Button type="submit">
-                      {editingProduct ? "تحديث" : "حفظ"}
-                    </Button>
+                    <Button type="submit">{editingProduct ? "تحديث" : "حفظ"}</Button>
                   </div>
                 </form>
               </DialogContent>
