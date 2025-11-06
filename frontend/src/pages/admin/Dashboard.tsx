@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BedDouble, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
@@ -11,45 +11,36 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { getBookings } from "@/api/bookings";
-import { getAllOrders } from "@/api/orders";
-import { getUser } from "@/api/auth";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
-
+import { useBookingsStore } from "@/store/useBookingsStore";
+import { useOrdersStore } from "@/store/useOrdersStore";
+import { useAdminUsersStore } from "@/store/useAdminUsersStore";
 
 const Dashboard = () => {
-  const [bookings, setBookings] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const hasPermission = useAuthStore(state => state.hasPermission);
+  const hasPermission = useAuthStore((state) => state.hasPermission);
+
+  // 🟢 جلب البيانات من الـ stores
+  const { bookings, fetchBookings, loading: bookingsLoading } = useBookingsStore();
+  const { orders, fetchOrders, loading: ordersLoading } = useOrdersStore();
+  const { users, fetchUsersAndRoles, loading: usersLoading } = useAdminUsersStore();
+
+  const loading = bookingsLoading || ordersLoading || usersLoading;
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        const [bookingsRes, ordersRes, userRes] = await Promise.all([
-          getBookings(),
-          getAllOrders(),
-          getUser(),
-        ]);
-
-        setBookings(bookingsRes?.data || []);
-        setOrders(ordersRes || []);
-        setUsers(userRes?.data ? [userRes.data] : []);
+        await Promise.all([fetchBookings(), fetchOrders(), fetchUsersAndRoles()]);
       } catch (error) {
         console.error("حدث خطأ أثناء تحميل البيانات:", error);
         toast.error("فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا");
         localStorage.removeItem("token");
         window.location.href = "/auth";
-      } finally {
-        setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    loadData();
+  }, [fetchBookings, fetchOrders, fetchUsersAndRoles]);
 
-  // ✅ نتحقق من الصلاحية بعد استدعاء جميع الـ hooks
   if (!hasPermission("dashboard_view")) {
     return (
       <AdminLayout>
@@ -60,20 +51,19 @@ const Dashboard = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="p-10 text-center text-lg">جاري تحميل البيانات...</div>
-      </AdminLayout>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <AdminLayout>
+  //       <div className="p-10 text-center text-lg">جاري تحميل البيانات...</div>
+  //     </AdminLayout>
+  //   );
+  // }
 
   const totalRevenue = orders.reduce(
-    (sum, o) => sum + (parseFloat(o.amount) || 0),
+    (sum, o) => sum + (parseFloat(o.total.toString()) || 0),
     0
   );
 
-  // 📊 بيانات الكروت العلوية
   const statsData = [
     {
       icon: BedDouble,
@@ -101,20 +91,14 @@ const Dashboard = () => {
     },
   ];
 
-  // 📈 رسم بياني للحجوزات اليومية
   const chartData = (() => {
-    const days = [
-      "السبت",
-      "الأحد",
-      "الاثنين",
-      "الثلاثاء",
-      "الأربعاء",
-      "الخميس",
-      "الجمعة",
-    ];
+    const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
     const counts: Record<string, number> = {};
     bookings.forEach((b) => {
-      const date = new Date(b.date || b.created_at);
+      // استخدام check_in أو created_at إذا موجود
+     // const date = new Date(b.check_in || b.created_at || "");
+     const date = new Date(b.check_in);
+
       const dayName = days[date.getDay()];
       counts[dayName] = (counts[dayName] || 0) + 1;
     });
@@ -165,10 +149,7 @@ const Dashboard = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip

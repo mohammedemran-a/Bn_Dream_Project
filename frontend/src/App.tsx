@@ -43,13 +43,13 @@ const App = () => {
     fetchUser();
   }, [fetchUser]); // ✅ أضفنا fetchUser كمصفوفة اعتماديات
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-xl">
-        جاري التحميل...
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen text-xl">
+  //       جاري التحميل...
+  //     </div>
+  //   );
+  // }
 
   return (
     <QueryClientProvider client={queryClient}>

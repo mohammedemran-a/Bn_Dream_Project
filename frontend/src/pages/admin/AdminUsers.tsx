@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getAllUsers, createUser, updateUser, deleteUser } from "@/api/auth";
-import { getRoles } from "@/api/role";
 import { useAuthStore } from "@/store/useAuthStore";
-import { AxiosError } from "axios";
+import { useAdminUsersStore } from "@/store/useAdminUsersStore";
 
 interface IUser {
   id: number;
@@ -23,17 +21,11 @@ interface IUser {
   roles?: string[];
 }
 
-interface IRole {
-  id: number;
-  name: string;
-}
-
 const AdminUsers = () => {
   const hasPermission = useAuthStore((state) => state.hasPermission);
+  const { users, roles, loading, fetchUsersAndRoles, createUser, updateUser, deleteUser } =
+    useAdminUsersStore();
 
-  const [users, setUsers] = useState<IUser[]>([]);
-  const [roles, setRoles] = useState<IRole[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
   const [formData, setFormData] = useState({
@@ -44,30 +36,16 @@ const AdminUsers = () => {
     role: "",
   });
 
-  // -----------------------------
-  // جلب البيانات
-  // -----------------------------
-  const fetchUsersAndRoles = useCallback(async () => {
-    try {
-      setLoadingUsers(true);
-      const [usersRes, rolesRes] = await Promise.all([getAllUsers(), getRoles()]);
-      setUsers(usersRes.users || []);
-      setRoles(rolesRes || []);
-    } catch (error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "حدث خطأ أثناء تحميل البيانات ❌");
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, []);
-
+  // 🟢 عند تحميل الصفحة
   useEffect(() => {
     if (hasPermission("users_view")) fetchUsersAndRoles();
   }, [fetchUsersAndRoles, hasPermission]);
 
-  // -----------------------------
-  // فتح نموذج إضافة/تعديل
-  // -----------------------------
+  const resetForm = () => {
+    setFormData({ name: "", email: "", phone: "", password: "", role: "" });
+    setEditingUser(null);
+  };
+
   const handleEdit = (user: IUser) => {
     if (!hasPermission("users_edit")) return toast.error("🚫 ليس لديك صلاحية التعديل!");
     setEditingUser(user);
@@ -81,108 +59,29 @@ const AdminUsers = () => {
     setIsDialogOpen(true);
   };
 
-  const resetForm = () => {
-    setFormData({ name: "", email: "", phone: "", password: "", role: "" });
-    setEditingUser(null);
-  };
-
-  // -----------------------------
-  // حفظ/تحديث مستخدم
-  // -----------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingUser) {
-        if (!hasPermission("users_edit")) return toast.error("🚫 ليس لديك صلاحية التعديل!");
-        const response = await updateUser(editingUser.id, formData);
-        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? response.user : u)));
-        toast.success("تم تعديل المستخدم ✅");
-      } else {
-        if (!hasPermission("users_create")) return toast.error("🚫 ليس لديك صلاحية الإضافة!");
-        const response = await createUser(formData);
-        setUsers((prev) => [...prev, response.user]);
-        toast.success("تمت إضافة المستخدم ✅");
-      }
-      setIsDialogOpen(false);
-      resetForm();
-    } catch (error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "فشل العملية ❌");
+    if (editingUser) {
+      if (!hasPermission("users_edit")) return toast.error("🚫 ليس لديك صلاحية التعديل!");
+      await updateUser(editingUser.id, formData);
+    } else {
+      if (!hasPermission("users_create")) return toast.error("🚫 ليس لديك صلاحية الإضافة!");
+      await createUser(formData);
     }
+    setIsDialogOpen(false);
+    resetForm();
   };
 
-  // -----------------------------
-  // حذف مستخدم
-  // -----------------------------
   const handleDelete = async (id: number) => {
     if (!hasPermission("users_delete")) return toast.error("🚫 ليس لديك صلاحية الحذف!");
     if (!confirm("هل أنت متأكد من حذف هذا المستخدم؟")) return;
-    try {
-      await deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-      toast.success("تم حذف المستخدم ✅");
-    } catch (error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "فشل حذف المستخدم ❌");
-    }
+    await deleteUser(id);
   };
-
-  // -----------------------------
-  // جدول المستخدمين
-  // -----------------------------
-  const UsersTable = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>الاسم</TableHead>
-          <TableHead>البريد الإلكتروني</TableHead>
-          <TableHead>رقم الهاتف</TableHead>
-          <TableHead>الدور</TableHead>
-          <TableHead>العمليات</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.id}>
-            <TableCell>{user.name}</TableCell>
-            <TableCell>{user.email}</TableCell>
-            <TableCell>{user.phone || "-"}</TableCell>
-            <TableCell>
-              {user.roles?.map((role) => (
-                <Badge key={role}>{role}</Badge>
-              ))}
-            </TableCell>
-            <TableCell>
-              <div className="flex gap-2 justify-end">
-                {hasPermission("users_edit") && (
-                  <Button size="sm" variant="ghost" onClick={() => handleEdit(user)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                )}
-                {hasPermission("users_delete") && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive"
-                    onClick={() => handleDelete(user.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
 
   if (!hasPermission("users_view")) {
     return (
       <AdminLayout>
-        <p className="text-center text-red-600 text-lg mt-10">
-          🚫 ليس لديك صلاحية عرض المستخدمين
-        </p>
+        <p className="text-center text-red-600 text-lg mt-10">🚫 ليس لديك صلاحية عرض المستخدمين</p>
       </AdminLayout>
     );
   }
@@ -294,13 +193,60 @@ const AdminUsers = () => {
           )}
         </div>
 
-        {/* جدول المستخدمين داخل Card */}
+        {/* جدول المستخدمين */}
         <Card>
           <CardHeader>
             <CardTitle>قائمة المستخدمين</CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingUsers ? <p>جار التحميل...</p> : <UsersTable />}
+            {loading ? (
+              <p>جارٍ التحميل...</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الاسم</TableHead>
+                    <TableHead>البريد الإلكتروني</TableHead>
+                    <TableHead>الهاتف</TableHead>
+                    <TableHead>الدور</TableHead>
+                    <TableHead>العمليات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.phone || "-"}</TableCell>
+                      <TableCell>
+                        {user.roles?.map((r) => (
+                          <Badge key={r}>{r}</Badge>
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-end">
+                          {hasPermission("users_edit") && (
+                            <Button size="sm" variant="ghost" onClick={() => handleEdit(user)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {hasPermission("users_delete") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              onClick={() => handleDelete(user.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
