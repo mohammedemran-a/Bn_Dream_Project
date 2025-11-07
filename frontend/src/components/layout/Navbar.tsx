@@ -15,21 +15,28 @@ import {
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CartSheet } from "@/components/cart/CartSheet";
-import { useAuthStore } from "@/store/useAuthStore"; // ✅ استخدام Zustand
+import { useAuthStore } from "@/store/useAuthStore"; // Zustand
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  // ✅ Zustand store
-  const { user, logout } = useAuthStore();
+  // Zustand store
+  const { user, logout, hasPermission } = useAuthStore();
 
+  // روابط التنقل مع الصلاحيات
   const navLinks = [
     { name: "الرئيسية", path: "/", icon: Home },
     { name: "الغرف", path: "/rooms", icon: DoorOpen },
     { name: "الخدمات", path: "/services", icon: Briefcase },
     { name: "المباريات", path: "/matches", icon: Trophy },
     { name: "تواصل معنا", path: "/contact", icon: Phone },
+    {
+      name: "لوحة التحكم",
+      path: "/admin",
+      icon: Settings,
+      permission: "dashboard_access", // يظهر فقط لمن لديهم الصلاحية
+    },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -58,34 +65,25 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1 flex-1 justify-center mx-4">
-            {navLinks.map((link, index) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <Button
-                  variant={isActive(link.path) ? "default" : "ghost"}
-                  size="sm"
-                  className="gap-2 transition-smooth hover-lift"
+            {navLinks
+              .filter((link) => !link.permission || hasPermission(link.permission))
+              .map((link, index) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <link.icon className="h-4 w-4" />
-                  <span className="hidden xl:inline">{link.name}</span>
-                </Button>
-              </Link>
-            ))}
-
-            <Link to="/admin" className="animate-fade-in">
-              <Button
-                variant={isActive("/admin") ? "default" : "outline"}
-                size="sm"
-                className="gap-2 transition-smooth hover-lift"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden xl:inline">لوحة التحكم</span>
-              </Button>
-            </Link>
+                  <Button
+                    variant={isActive(link.path) ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-2 transition-smooth hover-lift"
+                  >
+                    <link.icon className="h-4 w-4" />
+                    <span className="hidden xl:inline">{link.name}</span>
+                  </Button>
+                </Link>
+              ))}
           </div>
 
           {/* Desktop Right Side */}
@@ -132,33 +130,20 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isOpen && (
           <div className="lg:hidden py-3 sm:py-4 space-y-1.5 sm:space-y-2 animate-fade-in-down">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={() => setIsOpen(false)}
-              >
-                <Button
-                  variant={isActive(link.path) ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start gap-2"
-                >
-                  <link.icon className="h-4 w-4" />
-                  {link.name}
-                </Button>
-              </Link>
-            ))}
-
-            <Link to="/admin" onClick={() => setIsOpen(false)}>
-              <Button
-                variant={isActive("/admin") ? "default" : "outline"}
-                size="sm"
-                className="w-full justify-start gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                لوحة التحكم
-              </Button>
-            </Link>
+            {navLinks
+              .filter((link) => !link.permission || hasPermission(link.permission))
+              .map((link) => (
+                <Link key={link.path} to={link.path} onClick={() => setIsOpen(false)}>
+                  <Button
+                    variant={isActive(link.path) ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start gap-2"
+                  >
+                    <link.icon className="h-4 w-4" />
+                    {link.name}
+                  </Button>
+                </Link>
+              ))}
 
             <div className="pt-2 border-t border-border/50">
               {user ? (
