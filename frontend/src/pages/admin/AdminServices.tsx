@@ -71,65 +71,69 @@ const AdminServices = () => {
   const ProductsTable = ({ type }: { type: string }) => {
     const filtered = products.filter((p) => p.type === type);
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>الصورة</TableHead>
-            <TableHead>الاسم</TableHead>
-            <TableHead>السعر</TableHead>
-            <TableHead>الكمية</TableHead>
-            <TableHead>الفئة</TableHead>
-            <TableHead>العمليات</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>
-                <img
-                  src={product.image?.startsWith("http")
-                    ? product.image
-                    : `http://127.0.0.1:8000/storage/${product.image}`}
-                  alt={product.name}
-                  className="w-16 h-16 object-cover rounded border"
-                />
-              </TableCell>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>{product.price} ريال</TableCell>
-              <TableCell>{product.stock}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{product.category}</Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2 justify-end">
-                  {hasPermission("services_edit") && (
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(product)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {hasPermission("services_delete") && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => handleDelete(product.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {filtered.length === 0 && (
+      <div dir="rtl"> {/* ✅ اتجاه الجدول من اليمين إلى اليسار */}
+        <Table className="w-full text-right">
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-gray-500">
-                لا توجد منتجات في هذا التصنيف
-              </TableCell>
+              <TableHead>الصورة</TableHead>
+              <TableHead>الاسم</TableHead>
+              <TableHead>السعر</TableHead>
+              <TableHead>الكمية</TableHead>
+              <TableHead>الفئة</TableHead>
+              <TableHead>العمليات</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>
+                  <img
+                    src={
+                      product.image?.startsWith("http")
+                        ? product.image
+                        : `http://127.0.0.1:8000/storage/${product.image}`
+                    }
+                    alt={product.name}
+                    className="w-16 h-16 object-cover rounded border"
+                  />
+                </TableCell>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>{product.price} ريال</TableCell>
+                <TableCell>{product.stock}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{product.category}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2 justify-end">
+                    {hasPermission("services_edit") && (
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(product)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {hasPermission("services_delete") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                  لا توجد منتجات في هذا التصنيف
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 
@@ -146,6 +150,7 @@ const AdminServices = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* 🔹 العنوان وزر الإضافة لم يتغيرا */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة المنتجات</h1>
 
@@ -244,28 +249,31 @@ const AdminServices = () => {
           )}
         </div>
 
-        <Tabs defaultValue="البقالة">
-          <TabsList className="grid grid-cols-5">
-            {categories.map((cat) => (
-              <TabsTrigger key={cat} value={cat}>
-                {cat}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* ✅ التبويبات والجدول والعنوان الداخلي من اليمين إلى اليسار */}
+        <div dir="rtl">
+          <Tabs defaultValue="البقالة">
+            <TabsList className="grid grid-cols-5">
+              {categories.map((cat) => (
+                <TabsTrigger key={cat} value={cat}>
+                  {cat}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          {categories.map((cat) => (
-            <TabsContent key={cat} value={cat}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{cat}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ProductsTable type={cat} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
+            {categories.map((cat) => (
+              <TabsContent key={cat} value={cat}>
+                <Card>
+                  <CardHeader className="text-right"> {/* ✅ عنوان القسم يمين */}
+                    <CardTitle>{cat}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ProductsTable type={cat} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
       </div>
     </AdminLayout>
   );

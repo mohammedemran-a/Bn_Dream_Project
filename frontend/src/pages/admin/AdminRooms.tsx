@@ -6,7 +6,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -14,7 +14,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import {
   Dialog,
@@ -22,14 +22,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -79,15 +79,14 @@ const AdminRooms = () => {
     if (hasPermission("rooms_view")) fetchRooms();
   }, [fetchRooms, hasPermission]);
 
-  // 🟢 التعامل مع تغير الحقول
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    setForm((prev) => ({ ...prev, [id]: value }));
+    setForm(prev => ({ ...prev, [id]: value }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setForm((prev) => ({ ...prev, image: e.target.files![0] }));
+      setForm(prev => ({ ...prev, image: e.target.files![0] }));
     }
   };
 
@@ -153,55 +152,62 @@ const AdminRooms = () => {
   };
 
   const RoomsTable = ({ category }: { category: string }) => {
-    const filtered = rooms.filter((r) => r.category === category);
+    const filtered = rooms.filter(r => r.category === category);
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>الصورة</TableHead>
-            <TableHead>الاسم</TableHead>
-            <TableHead>السعر</TableHead>
-            <TableHead>السعة</TableHead>
-            <TableHead>الحالة</TableHead>
-            <TableHead>العمليات</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((room) => (
-            <TableRow key={room.id}>
-              <TableCell>
-                <img
-                  src={`http://localhost:8000/storage/${room.image_path}`}
-                  alt={room.name}
-                  className="w-16 h-16 object-cover rounded"
-                />
-              </TableCell>
-              <TableCell>{room.name}</TableCell>
-              <TableCell>{room.price} ريال</TableCell>
-              <TableCell>{room.capacity}</TableCell>
-              <TableCell>
-                <Badge variant={room.status === "متاح" ? "default" : "secondary"}>
-                  {room.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2 justify-end">
-                  {hasPermission("rooms_edit") && (
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(room)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {hasPermission("rooms_delete") && (
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(room.id!)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
+      <div dir="rtl" className="overflow-x-auto">
+        <Table className="text-right w-full">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-right">الصورة</TableHead>
+              <TableHead className="text-right">الاسم</TableHead>
+              <TableHead className="text-right">السعر</TableHead>
+              <TableHead className="text-right">السعة</TableHead>
+              <TableHead className="text-right">الحالة</TableHead>
+              <TableHead className="text-right">العمليات</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map(room => (
+              <TableRow key={room.id}>
+                <TableCell>
+                  <img
+                    src={`http://localhost:8000/storage/${room.image_path}`}
+                    alt={room.name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                </TableCell>
+                <TableCell>{room.name}</TableCell>
+                <TableCell>{room.price} ريال</TableCell>
+                <TableCell>{room.capacity}</TableCell>
+                <TableCell>
+                  <Badge variant={room.status === "متاح" ? "default" : "secondary"}>
+                    {room.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2 justify-start">
+                    {hasPermission("rooms_edit") && (
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(room)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {hasPermission("rooms_delete") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => handleDelete(room.id!)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 
@@ -218,6 +224,7 @@ const AdminRooms = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* 🔹 العنوان والزر كما كان */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة الغرف</h1>
 
@@ -245,7 +252,7 @@ const AdminRooms = () => {
                   </Button>
                 )}
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
+              <DialogContent dir="rtl" className="sm:max-w-[600px] text-right">
                 <DialogHeader>
                   <DialogTitle>
                     {editingRoom ? "تعديل الغرفة" : "إضافة غرفة جديدة"}
@@ -261,13 +268,13 @@ const AdminRooms = () => {
                     <Label>التصنيف</Label>
                     <Select
                       value={form.category}
-                      onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}
+                      onValueChange={v => setForm(p => ({ ...p, category: v }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر التصنيف" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((c) => (
+                        {categories.map(c => (
                           <SelectItem key={c} value={c}>
                             {c}
                           </SelectItem>
@@ -326,15 +333,16 @@ const AdminRooms = () => {
           )}
         </div>
 
-        <Tabs defaultValue="غرف خاصة">
+        {/* 🔹 التبويبات والجدول من اليمين لليسار */}
+        <Tabs defaultValue="غرف خاصة" dir="rtl" className="text-right">
           <TabsList className="grid grid-cols-5">
-            {categories.map((cat) => (
+            {categories.map(cat => (
               <TabsTrigger key={cat} value={cat}>
                 {cat}
               </TabsTrigger>
             ))}
           </TabsList>
-          {categories.map((cat) => (
+          {categories.map(cat => (
             <TabsContent key={cat} value={cat}>
               <Card>
                 <CardHeader>
