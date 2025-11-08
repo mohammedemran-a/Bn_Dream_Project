@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getAllUsers, createUser, updateUser, deleteUser } from "@/api/auth";
+import { getAllUsers, createUser, updateUser, deleteUser } from "@/api/users";
 import { getRoles } from "@/api/role";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
