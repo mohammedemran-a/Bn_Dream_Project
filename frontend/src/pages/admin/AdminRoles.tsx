@@ -1,17 +1,13 @@
-import { useState, useEffect } from "react";
+// src/pages/admin/AdminRoles.tsx
+"use client";
+
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRoles, getPermissions, createRole, updateRole, deleteRole, Role, PermissionItem } from "@/api/roles";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -24,45 +20,81 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import permissionsTranslations from "@/lang/permissions.json";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useRolesStore } from "@/store/useRolesStore";
+import permissionsTranslations from "@/lang/permissions.json";
 
-interface Role {
-  id: number;
-  name: string;
-  permissions: string[];
-  usersCount: number;
-  createdAt: string;
-}
-
-interface PermissionItem {
-  id: string;
-  label: string;
-}
+const handleApiError = (
+  error: unknown,
+  toast: (opts: { title: string; description: string; variant?: "default" | "destructive" }) => void
+) => {
+  const err = error as { response?: { data?: { message?: string } } };
+  toast({
+    title: "خطأ",
+    description: err.response?.data?.message || "حدث خطأ أثناء العملية",
+    variant: "destructive",
+  });
+};
 
 const AdminRoles = () => {
-  const {
-    roles,
-    availablePermissions,
-    fetchRolesAndPermissions,
-    addRole,
-    editRole,
-    removeRole,
-    loading,
-  } = useRolesStore();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const hasPermission = useAuthStore((state) => state.hasPermission);
 
+  // جلب الأدوار
+  const { data: roles = [], isLoading: loadingRoles } = useQuery<Role[], Error>({
+    queryKey: ["roles"],
+    queryFn: getRoles,
+  });
+
+  // جلب الصلاحيات
+  const { data: availablePermissions = [], isLoading: loadingPermissions } = useQuery<PermissionItem[], Error>({
+    queryKey: ["permissions"],
+    queryFn: async () => {
+      const res = await getPermissions();
+      // التأكد أن كل صلاحية بصيغة PermissionItem
+      return res.map((p) => (typeof p === "string" ? { id: p, label: p } : p));
+    },
+  });
+
+  // إنشاء دور
+  const createRoleMutation = useMutation({
+    mutationFn: (data: { name: string; permissions: string[] }) => createRole(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast({ title: "تم الإنشاء", description: "تم إنشاء الدور بنجاح ✅" });
+    },
+    onError: (error: unknown) => handleApiError(error, toast),
+  });
+
+  // تعديل دور
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; permissions: string[] } }) =>
+      updateRole(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast({ title: "تم التحديث", description: "تم تعديل الدور بنجاح ✅" });
+    },
+    onError: (error: unknown) => handleApiError(error, toast),
+  });
+
+  // حذف دور
+  const deleteRoleMutation = useMutation({
+    mutationFn: (id: number) => deleteRole(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast({ title: "تم الحذف", description: "تم حذف الدور بنجاح ✅" });
+    },
+    onError: (error: unknown) => handleApiError(error, toast),
+  });
+
+  // حالة الفورم
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [roleName, setRoleName] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const { toast } = useToast();
-  const hasPermission = useAuthStore((state) => state.hasPermission);
-
-  useEffect(() => {
-    fetchRolesAndPermissions();
-  }, [fetchRolesAndPermissions]);
 
   const handleOpenDialog = (role?: Role) => {
     if (!hasPermission(role ? "roles_edit" : "roles_create")) return;
@@ -86,84 +118,54 @@ const AdminRoles = () => {
     setSelectedPermissions([]);
   };
 
-  const handlePermissionToggle = (permissionId: string) => {
+  const handlePermissionToggle = (permissionId: string, checked: boolean) => {
     setSelectedPermissions((prev) =>
-      prev.includes(permissionId)
-        ? prev.filter((p) => p !== permissionId)
-        : [...prev, permissionId]
+      checked ? [...prev, permissionId] : prev.filter((p) => p !== permissionId)
     );
   };
 
-  const handleSaveRole = async () => {
+  const handleSaveRole = () => {
     if (!hasPermission(editingRole ? "roles_edit" : "roles_create")) return;
 
     if (!roleName.trim()) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال اسم الدور",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "يرجى إدخال اسم الدور", variant: "destructive" });
       return;
     }
 
     if (selectedPermissions.length === 0) {
-      toast({
-        title: "خطأ",
-        description: "يرجى اختيار صلاحية واحدة على الأقل",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "يرجى اختيار صلاحية واحدة على الأقل", variant: "destructive" });
       return;
     }
 
-    try {
-      if (editingRole) {
-        await editRole(editingRole.id, {
-          name: roleName,
-          permissions: selectedPermissions,
-        });
-        toast({ title: "تم التحديث", description: "تم تعديل الدور بنجاح ✅" });
-      } else {
-        await addRole({
-          name: roleName,
-          permissions: selectedPermissions,
-        });
-        toast({ title: "تم الإنشاء", description: "تم إنشاء الدور بنجاح ✅" });
-      }
-
-      handleCloseDialog();
-    } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast({
-        title: "خطأ",
-        description: err.response?.data?.message || "حدث خطأ أثناء الحفظ",
-        variant: "destructive",
-      });
+    if (editingRole) {
+      updateRoleMutation.mutate({ id: editingRole.id, data: { name: roleName, permissions: selectedPermissions } });
+    } else {
+      createRoleMutation.mutate({ name: roleName, permissions: selectedPermissions });
     }
+
+    handleCloseDialog();
   };
 
-  const handleDeleteRole = async (id: number) => {
+  const handleDeleteRole = (id: number) => {
     if (!hasPermission("roles_delete")) return;
-
-    try {
-      await removeRole(id);
-      toast({ title: "تم الحذف", description: "تم حذف الدور بنجاح ✅" });
-    } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast({
-        title: "خطأ",
-        description: err.response?.data?.message || "فشل الحذف",
-        variant: "destructive",
-      });
-    }
+    deleteRoleMutation.mutate(id);
   };
 
   if (!hasPermission("roles_view")) {
     return (
       <AdminLayout>
         <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-xl text-red-500 font-semibold">
-            🚫 ليس لديك صلاحية عرض الأدوار
-          </p>
+          <p className="text-xl text-red-500 font-semibold">🚫 ليس لديك صلاحية عرض الأدوار</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (loadingRoles || loadingPermissions) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-20">
+          <p className="text-lg text-muted-foreground animate-pulse">جاري التحميل...</p>
         </div>
       </AdminLayout>
     );
@@ -175,33 +177,23 @@ const AdminRoles = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">إدارة الأدوار والصلاحيات</h1>
-            <p className="text-muted-foreground">
-              تخصيص الأدوار وتعيين الصلاحيات للمستخدمين
-            </p>
+            <p className="text-muted-foreground">تخصيص الأدوار وتعيين الصلاحيات للمستخدمين</p>
           </div>
 
           {(hasPermission("roles_create") || hasPermission("roles_edit")) && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 {hasPermission("roles_create") && (
-                  <Button
-                    onClick={() => handleOpenDialog()}
-                    className="gap-2 shadow-elegant"
-                  >
-                    <Plus className="w-4 h-4" />
-                    إضافة دور جديد
+                  <Button onClick={() => handleOpenDialog()} className="gap-2 shadow-elegant">
+                    <Plus className="w-4 h-4" /> إضافة دور جديد
                   </Button>
                 )}
               </DialogTrigger>
 
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingRole ? "تعديل الدور" : "إضافة دور جديد"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    قم بتحديد اسم الدور والصلاحيات المرتبطة به
-                  </DialogDescription>
+                  <DialogTitle>{editingRole ? "تعديل الدور" : "إضافة دور جديد"}</DialogTitle>
+                  <DialogDescription>قم بتحديد اسم الدور والصلاحيات المرتبطة به</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
@@ -219,23 +211,19 @@ const AdminRoles = () => {
                     <Label>الصلاحيات</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
                       {availablePermissions.map((permission) => (
-                        <div
-                          key={permission.id}
-                          className="flex items-center space-x-2 space-x-reverse"
-                        >
+                        <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
                           <Checkbox
-                            id={permission.id}
+                            id={`perm-${permission.id}`}
                             checked={selectedPermissions.includes(permission.id)}
-                            onCheckedChange={() =>
-                              handlePermissionToggle(permission.id)
+                            onCheckedChange={(checked) =>
+                              handlePermissionToggle(permission.id, checked as boolean)
                             }
                           />
                           <label
-                            htmlFor={permission.id}
+                            htmlFor={`perm-${permission.id}`}
                             className="text-sm font-medium leading-none cursor-pointer"
                           >
-                            {permissionsTranslations[permission.id] ||
-                              permission.label}
+                            {permissionsTranslations[permission.id] || permission.label}
                           </label>
                         </div>
                       ))}
@@ -244,12 +232,8 @@ const AdminRoles = () => {
                 </div>
 
                 <DialogFooter>
-                  <Button variant="outline" onClick={handleCloseDialog}>
-                    إلغاء
-                  </Button>
-                  <Button onClick={handleSaveRole}>
-                    {editingRole ? "حفظ التعديلات" : "إنشاء الدور"}
-                  </Button>
+                  <Button variant="outline" onClick={handleCloseDialog}>إلغاء</Button>
+                  <Button onClick={handleSaveRole}>{editingRole ? "حفظ التعديلات" : "إنشاء الدور"}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -276,18 +260,12 @@ const AdminRoles = () => {
                   <TableRow key={role.id} className="hover:bg-accent/5">
                     <TableCell className="font-medium">{role.name}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {role.permissions.length} صلاحية
-                      </Badge>
+                      <Badge variant="secondary">{role.permissions.length} صلاحية</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {role.usersCount} مستخدم
-                      </Badge>
+                      <Badge variant="outline">{role.usersCount || 0} مستخدم</Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {role.createdAt}
-                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{role.createdAt}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
                         {hasPermission("roles_edit") && (

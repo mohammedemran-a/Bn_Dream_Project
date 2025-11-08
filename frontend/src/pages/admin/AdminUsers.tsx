@@ -1,34 +1,36 @@
-import { useEffect, useState } from "react";
+// src/pages/admin/AdminUsers.tsx
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useAdminUsersStore } from "@/store/useAdminUsersStore";
-
-interface IUser {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  roles?: string[];
-}
+import { getAllUsers, createUser, updateUser, deleteUser, IUser, UserFormData } from "@/api/users.ts";
+import { getRoles, Role } from "@/api/roles";
+import { AxiosError } from "axios";
 
 const AdminUsers = () => {
+  const queryClient = useQueryClient();
   const hasPermission = useAuthStore((state) => state.hasPermission);
-  const { users, roles, loading, fetchUsersAndRoles, createUser, updateUser, deleteUser } =
-    useAdminUsersStore();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<IUser | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UserFormData>({
     name: "",
     email: "",
     phone: "",
@@ -36,11 +38,71 @@ const AdminUsers = () => {
     role: "",
   });
 
-  // 🟢 عند تحميل الصفحة
-  useEffect(() => {
-    if (hasPermission("users_view")) fetchUsersAndRoles();
-  }, [fetchUsersAndRoles, hasPermission]);
+  // ===============================
+  // React Query - Fetch Users & Roles
+  // ===============================
+  const { data: usersData, isLoading: loadingUsers, error: usersError } = useQuery<IUser[], Error>({
+    queryKey: ["users"],
+    queryFn: getAllUsers,
+    enabled: hasPermission("users_view"),
+  });
 
+  const users: IUser[] = Array.isArray(usersData) ? usersData : [];
+
+  const { data: rolesData, isLoading: loadingRoles, error: rolesError } = useQuery<Role[], Error>({
+    queryKey: ["roles"],
+    queryFn: getRoles,
+    enabled: hasPermission("users_view"),
+  });
+
+  const roles: Role[] = Array.isArray(rolesData) ? rolesData : [];
+
+  if (usersError) toast.error(usersError.message || "فشل جلب المستخدمين");
+  if (rolesError) toast.error(rolesError.message || "فشل جلب الأدوار");
+
+  // ===============================
+  // Mutations
+  // ===============================
+  const handleMutationError = (err: unknown, defaultMsg: string) => {
+    if (err instanceof AxiosError) {
+      toast.error(err.response?.data?.message || defaultMsg);
+    } else if (err instanceof Error) {
+      toast.error(err.message || defaultMsg);
+    } else {
+      toast.error(defaultMsg);
+    }
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (data: UserFormData) => createUser(data),
+    onSuccess: () => {
+      toast.success("تمت إضافة المستخدم ✅");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: unknown) => handleMutationError(err, "فشل في إنشاء المستخدم ❌"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UserFormData }) => updateUser(id, data),
+    onSuccess: () => {
+      toast.success("تم تعديل المستخدم ✅");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: unknown) => handleMutationError(err, "فشل تعديل المستخدم ❌"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteUser(id),
+    onSuccess: () => {
+      toast.success("تم حذف المستخدم ✅");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: unknown) => handleMutationError(err, "فشل حذف المستخدم ❌"),
+  });
+
+  // ===============================
+  // Form Handlers
+  // ===============================
   const resetForm = () => {
     setFormData({ name: "", email: "", phone: "", password: "", role: "" });
     setEditingUser(null);
@@ -59,37 +121,45 @@ const AdminUsers = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
       if (!hasPermission("users_edit")) return toast.error("🚫 ليس لديك صلاحية التعديل!");
-      await updateUser(editingUser.id, formData);
+      updateMutation.mutate({ id: editingUser.id, data: formData });
     } else {
       if (!hasPermission("users_create")) return toast.error("🚫 ليس لديك صلاحية الإضافة!");
-      await createUser(formData);
+      createMutation.mutate(formData);
     }
     setIsDialogOpen(false);
     resetForm();
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!hasPermission("users_delete")) return toast.error("🚫 ليس لديك صلاحية الحذف!");
     if (!confirm("هل أنت متأكد من حذف هذا المستخدم؟")) return;
-    await deleteUser(id);
+    deleteMutation.mutate(id);
   };
 
+  // ===============================
+  // Permissions check
+  // ===============================
   if (!hasPermission("users_view")) {
     return (
       <AdminLayout>
-        <p className="text-center text-red-600 text-lg mt-10">🚫 ليس لديك صلاحية عرض المستخدمين</p>
+        <p className="text-center text-red-600 text-lg mt-10">
+          🚫 ليس لديك صلاحية عرض المستخدمين
+        </p>
       </AdminLayout>
     );
   }
 
+  // ===============================
+  // Render
+  // ===============================
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* رأس الصفحة + زر إضافة */}
+        {/* Header + Add Button */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة المستخدمين</h1>
           {(hasPermission("users_create") || hasPermission("users_edit")) && (
@@ -193,13 +263,13 @@ const AdminUsers = () => {
           )}
         </div>
 
-        {/* جدول المستخدمين */}
+        {/* Users Table */}
         <Card>
           <CardHeader>
             <CardTitle>قائمة المستخدمين</CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {loadingUsers ? (
               <p>جارٍ التحميل...</p>
             ) : (
               <Table>
