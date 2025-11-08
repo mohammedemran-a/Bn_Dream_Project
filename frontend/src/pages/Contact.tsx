@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Send } from "lucide-react";
-import { useState } from "react";
-import { sendContactMessage } from "@/api/contacts"; // ✅ استدعاء دالة API
+import { useState, ChangeEvent, FormEvent } from "react";
+import { sendContactMessage, ContactMessage, ContactResponse } from "@/api/contacts";
+import type { AxiosError } from "axios";
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactMessage>({
     name: "",
     email: "",
     phone: "",
@@ -24,23 +25,25 @@ const Contact = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // إرسال البيانات إلى API
-      const response = await sendContactMessage(formData);
-      console.log("Server response:", response.data);
+      const response: ContactResponse = await sendContactMessage(formData);
+      console.log("Server response:", response);
 
       alert("✅ تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
       setFormData({ name: "", email: "", phone: "", message: "" });
-    } catch (error) {
-      console.error("❌ خطأ أثناء إرسال الرسالة:", error.response?.data || error.message);
-      alert("حدث خطأ أثناء الإرسال، حاول مجدداً.");
-    } finally {
-      setLoading(false);
-    }
+   } catch (error) {
+    const err = error as AxiosError<{ message?: string }>;
+    console.error("❌ خطأ أثناء إرسال الرسالة:", err.response?.data?.message || err.message);
+    alert("حدث خطأ أثناء الإرسال، حاول مجدداً.");
+}
   };
 
   return (
@@ -72,65 +75,49 @@ const Contact = () => {
                   <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">
-                          الاسم الكامل
-                        </label>
+                        <label className="block text-sm font-medium mb-2">الاسم الكامل</label>
                         <Input
+                          name="name"
                           placeholder="أدخل اسمك"
                           value={formData.name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, name: e.target.value })
-                          }
+                          onChange={handleChange}
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">
-                          البريد الإلكتروني
-                        </label>
+                        <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
                         <Input
+                          name="email"
                           type="email"
                           placeholder="example@email.com"
                           value={formData.email}
-                          onChange={(e) =>
-                            setFormData({ ...formData, email: e.target.value })
-                          }
+                          onChange={handleChange}
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">
-                          رقم الهاتف
-                        </label>
+                        <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
                         <Input
+                          name="phone"
                           type="tel"
                           placeholder="+967 777 123 456"
                           value={formData.phone}
-                          onChange={(e) =>
-                            setFormData({ ...formData, phone: e.target.value })
-                          }
+                          onChange={handleChange}
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">
-                          رسالتك
-                        </label>
+                        <label className="block text-sm font-medium mb-2">رسالتك</label>
                         <Textarea
+                          name="message"
                           placeholder="اكتب رسالتك هنا..."
                           rows={5}
                           value={formData.message}
-                          onChange={(e) =>
-                            setFormData({ ...formData, message: e.target.value })
-                          }
+                          onChange={handleChange}
                           required
                         />
                       </div>
-                      <Button
-                        type="submit"
-                        className="w-full shadow-elegant gap-2"
-                        disabled={loading}
-                      >
+                      <Button type="submit" className="w-full shadow-elegant gap-2" disabled={loading}>
                         {loading ? "جارٍ الإرسال..." : (
                           <>
                             <Send className="h-4 w-4" />

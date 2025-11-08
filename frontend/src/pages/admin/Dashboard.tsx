@@ -1,71 +1,45 @@
-import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BedDouble, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
-import axios from "@/api/axios"; // تأكد من وجود ملف axios جاهز
 
-interface Booking {
-  id: number;
-  check_in: string;
-  // باقي الحقول حسب الحاجة
-}
+import { useAuthStore } from "@/store/useAuthStore";
+import { useQuery } from "@tanstack/react-query";
 
-interface Order {
-  id: number;
-  total: number;
-  created_at: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-}
+import { getBookings, Booking } from "@/api/bookings";
+import { getAllOrders, Order } from "@/api/orders";
+import { getAllUsers, IUser as User } from "@/api/users";
 
 const Dashboard = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuthStore();
+  const hasPermission = (perm: string) => user?.permissions?.includes(perm) || false;
 
-  // مثال على permission ثابت
-  const hasPermission = (perm: string) => true; // عدل حسب الـ auth الفعلي
+  // ✅ queryFn لا تستقبل أي معاملات خارجية
+  const { data: bookings = [], isLoading: bookingsLoading, error: bookingsError } = useQuery<Booking[], Error>({
+    queryKey: ["bookings"],
+    queryFn: () => getBookings(), // هنا لا تمرر status
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+  const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[], Error>({
+    queryKey: ["orders"],
+    queryFn: getAllOrders,
+  });
 
-        const [bookingsRes, ordersRes, usersRes] = await Promise.all([
-          axios.get("/api/bookings"),
-          axios.get("/api/orders"),
-          axios.get("/api/users"),
-        ]);
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<User[], Error>({
+    queryKey: ["users"],
+    queryFn: getAllUsers,
+  });
 
-        setBookings(bookingsRes.data);
-        setOrders(ordersRes.data);
-        setUsers(usersRes.data);
+  const loading = bookingsLoading || ordersLoading || usersLoading;
+  const error = bookingsError || ordersError || usersError;
 
-        setLoading(false);
-      } catch (error) {
-        console.error(error);
-        toast.error("فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا");
-        localStorage.removeItem("token");
-        window.location.href = "/auth";
-      }
-    };
-
-    fetchData();
-  }, []);
+  if (error) {
+    toast.error(error.message || "فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا");
+    localStorage.removeItem("token");
+    window.location.href = "/auth";
+    return null;
+  }
 
   if (!hasPermission("dashboard_view")) {
     return (
@@ -115,7 +89,6 @@ const Dashboard = () => {
           <p className="text-muted-foreground">نظرة عامة على نشاط النظام</p>
         </div>
 
-        {/* الكروت الإحصائية */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -141,7 +114,6 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* الرسم البياني */}
         <Card className="animate-fade-in" style={{ animationDelay: "400ms" }}>
           <CardHeader>
             <CardTitle>الحجوزات اليومية</CardTitle>
@@ -159,7 +131,13 @@ const Dashboard = () => {
                     borderRadius: "8px",
                   }}
                 />
-                <Line type="monotone" dataKey="bookings" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: "hsl(var(--primary))", r: 5 }} />
+                <Line
+                  type="monotone"
+                  dataKey="bookings"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--primary))", r: 5 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

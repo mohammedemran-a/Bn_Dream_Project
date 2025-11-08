@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { login as loginApi, register as registerApi, logout as logoutApi, getUser as getUserApi } from "@/api/auth";
+import { login as loginApi, register as registerApi, logout as logoutApi, getUser as getUserApi } from "@/api/auth.js";
 
 interface User {
   id: number;
