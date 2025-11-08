@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,20 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
-import { useProductStore } from "@/store/useProductStore";
-
-// -------------------------
-// واجهة TypeScript للمنتج
-// -------------------------
-export interface Product {
-  id: number;
-  name: string;
-  price: number;   // رقم فقط
-  image: string;   // حقل مطلوب
-  category: string;
-  description?: string;
-  type: string;
-}
+import { getProducts, Product } from "@/api/products.ts";
 
 // -------------------------
 // بطاقة الخدمة
@@ -38,7 +26,7 @@ const ServiceCard = ({
     <Card className="overflow-hidden hover-lift card-gradient border-2">
       <div className="h-48 overflow-hidden">
         <img
-          src={item.image}
+          src={item.image || "/placeholder.png"}
           alt={item.name}
           className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
         />
@@ -48,10 +36,14 @@ const ServiceCard = ({
         {item.description && (
           <CardDescription className="text-sm mt-1">{item.description}</CardDescription>
         )}
-        <CardDescription className="text-2xl font-bold text-primary mt-2">{item.price} ريال</CardDescription>
+        <CardDescription className="text-2xl font-bold text-primary mt-2">
+          {item.price} ريال
+        </CardDescription>
 
         <div className="flex items-center mt-2 gap-2">
-          <Button size="sm" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>-</Button>
+          <Button size="sm" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
+            -
+          </Button>
           <input
             type="number"
             className="w-12 text-center border rounded"
@@ -59,14 +51,13 @@ const ServiceCard = ({
             min={1}
             onChange={(e) => setQuantity(Number(e.target.value))}
           />
-          <Button size="sm" onClick={() => setQuantity((q) => q + 1)}>+</Button>
+          <Button size="sm" onClick={() => setQuantity((q) => q + 1)}>
+            +
+          </Button>
         </div>
       </CardHeader>
       <CardFooter>
-        <Button
-          onClick={() => addToCart(item, quantity)}
-          className="w-full shadow-elegant"
-        >
+        <Button onClick={() => addToCart(item, quantity)} className="w-full shadow-elegant">
           أضف إلى السلة
         </Button>
       </CardFooter>
@@ -78,37 +69,37 @@ const ServiceCard = ({
 // الصفحة الرئيسية للخدمات
 // -------------------------
 const Services = () => {
-  const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
-  const { products, fetchProducts } = useProductStore();
-
   const categories = ["بقالة", "قهوة", "قات", "شيشة", "كروت"];
 
+  // ✅ استخدام React Query لجلب المنتجات
+  const {
+    data: products = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Product[], Error>({
+    queryKey: ["products"],
+    queryFn: getProducts,
+  });
+
   useEffect(() => {
-    const loadProducts = async () => {
-      setLoading(true);
-      try {
-        await fetchProducts(); // جلب المنتجات من store
-      } catch (error) {
-        console.error("حدث خطأ أثناء جلب المنتجات:", error);
-        toast.error("تعذر تحميل المنتجات ❌");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProducts();
-  }, [fetchProducts]);
+    if (isError) {
+      console.error("حدث خطأ أثناء جلب المنتجات:", error);
+      toast.error("تعذر تحميل المنتجات ❌");
+    }
+  }, [isError, error]);
 
   const filterByCategory = (category: string) =>
-    Array.isArray(products) ? products.filter((p) => p.category === category) : [];
+    products.filter((p) => p.category === category);
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center h-screen text-xl font-bold">
-  //       جاري تحميل المنتجات...
-  //     </div>
-  //   );
-  // }
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-xl font-bold">
+        جاري تحميل المنتجات...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -138,29 +129,35 @@ const Services = () => {
               {categories.map((category) => (
                 <TabsContent key={category} value={category} className="animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filterByCategory(category).map((item, index) => (
-                      <div key={item.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                        <ServiceCard
-                          item={{
-                            ...item,
-                            price: Number(item.price), // تحويل السعر إلى رقم
-                            image: item.image || "",     // التأكد من وجود الصورة
-                          }}
-                          addToCart={(product, quantity) =>
-                            addItem(
-                              {
-                                id: product.id,
-                                name: product.name,
-                                price: Number(product.price),
-                                image: product.image || "",
-                                category: product.category,
-                              },
-                              quantity
-                            )
-                          }
-                        />
-                      </div>
-                    ))}
+                    {filterByCategory(category).length > 0 ? (
+                      filterByCategory(category).map((item, index) => (
+                        <div key={item.id} style={{ animationDelay: `${index * 0.05}s` }}>
+                          <ServiceCard
+                            item={{
+                              ...item,
+                              price: Number(item.price),
+                              image: item.image || "",
+                            }}
+                            addToCart={(product, quantity) =>
+                              addItem(
+                                {
+                                  id: product.id,
+                                  name: product.name,
+                                  price: Number(product.price),
+                                  image: product.image || "",
+                                  category: product.category,
+                                },
+                                quantity
+                              )
+                            }
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-muted-foreground py-6">
+                        لا توجد منتجات في هذه الفئة
+                      </p>
+                    )}
                   </div>
                 </TabsContent>
               ))}

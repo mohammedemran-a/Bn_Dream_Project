@@ -14,7 +14,7 @@ import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { createOrder } from "@/api/orders";
+import { createOrder } from "@/api/orders.ts";
 import { toast } from "sonner";
 
 export const CartSheet = () => {

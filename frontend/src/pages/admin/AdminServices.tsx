@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,68 +10,116 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useProductStore } from "@/store/useProductStore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getProducts, createProduct, updateProduct, deleteProduct, Product } from "@/api/products.ts";
 
 const categories = ["البقالة", "القات", "الشيشة", "الكروت", "القهوة"];
 
 const AdminServices = () => {
   const hasPermission = useAuthStore((state) => state.hasPermission);
+  const queryClient = useQueryClient();
 
-  const {
-    products,
-    form,
-    editingProduct,
-    isDialogOpen,
-    fetchProducts,
-    setIsDialogOpen,
-    setEditingProduct,
-    setForm,
-    updateFormField,
-    resetForm,
-    saveProduct,
-    deleteProductById,
-  } = useProductStore();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [form, setForm] = useState({
+    type: "البقالة",
+    name: "",
+    price: "",
+    stock: "",
+    category: "",
+    image: null as File | null,
+  });
 
-  useEffect(() => {
-    if (hasPermission("services_view")) {
-      fetchProducts();
-    }
-  }, [fetchProducts, hasPermission]);
+  // -------------------------
+  // جلب المنتجات
+  // -------------------------
+  const { data: products = [], isLoading, isFetching } = useQuery({
+    queryKey: ["products"],
+    queryFn: getProducts,
+    enabled: hasPermission("services_view"),
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    updateFormField(e.target.id as keyof typeof form, e.target.value);
+  // -------------------------
+  // حفظ أو تعديل المنتج
+  // -------------------------
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (value !== null) {
+          if (key === "image" && value instanceof File) {
+            formData.append(key, value);
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    updateFormField("image", e.target.files?.[0] ?? null);
+      if (editingProduct) {
+        return updateProduct(editingProduct.id, formData);
+      } else {
+        return createProduct(formData);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] }); // إعادة جلب البيانات بعد الحفظ
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+      resetForm();
+    },
+  });
 
-  const handleEdit = (product: typeof editingProduct) => {
+  // -------------------------
+  // حذف المنتج
+  // -------------------------
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteProduct(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] })
+  });
+
+  // -------------------------
+  // التعامل مع الفورم
+  // -------------------------
+  const updateFormField = (key: keyof typeof form, value: string | File | null) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetForm = () => {
+    setForm({
+      type: "البقالة",
+      name: "",
+      price: "",
+      stock: "",
+      category: "",
+      image: null,
+    });
+  };
+
+  const handleEdit = (product: Product) => {
     if (!hasPermission("services_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
     setEditingProduct(product);
-    if (product) {
-      setForm({
-        type: product.type,
-        name: product.name,
-        price: String(product.price),
-        stock: String(product.stock),
-        category: product.category,
-        image: null,
-      });
-    }
+    setForm({
+      type: product.type,
+      name: product.name,
+      price: String(product.price),
+      stock: String(product.stock),
+      category: product.category,
+      image: null,
+    });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = useCallback(
-    async (id: number) => {
-      if (!hasPermission("services_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
-      await deleteProductById(id);
-    },
-    [deleteProductById, hasPermission]
-  );
+  const handleDelete = (id: number) => {
+    if (!hasPermission("services_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
+    if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const ProductsTable = ({ type }: { type: string }) => {
-    const filtered = products.filter((p) => p.type === type);
+    const filtered = Array.isArray(products) ? products.filter((p) => p.type === type) : [];
     return (
-      <div dir="rtl"> {/* ✅ اتجاه الجدول من اليمين إلى اليسار */}
+      <div dir="rtl">
         <Table className="w-full text-right">
           <TableHeader>
             <TableRow>
@@ -111,12 +159,7 @@ const AdminServices = () => {
                       </Button>
                     )}
                     {hasPermission("services_delete") && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => handleDelete(product.id)}
-                      >
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(product.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
@@ -147,10 +190,17 @@ const AdminServices = () => {
     );
   }
 
+  if (isLoading || isFetching) {
+    return (
+      <AdminLayout>
+        <p className="text-center text-gray-500 mt-10">جارٍ تحميل المنتجات...</p>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* 🔹 العنوان وزر الإضافة لم يتغيرا */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة المنتجات</h1>
 
@@ -172,9 +222,7 @@ const AdminServices = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
-                  </DialogTitle>
+                  <DialogTitle>{editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}</DialogTitle>
                   <DialogDescription>
                     {editingProduct
                       ? "قم بتعديل بيانات المنتج الحالية ثم اضغط تحديث."
@@ -186,7 +234,7 @@ const AdminServices = () => {
                   className="space-y-4"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    saveProduct();
+                    saveMutation.mutate();
                   }}
                 >
                   <div>
@@ -206,31 +254,31 @@ const AdminServices = () => {
 
                   <div>
                     <Label htmlFor="name">اسم المنتج</Label>
-                    <Input id="name" value={form.name} onChange={handleChange} required />
+                    <Input id="name" value={form.name} onChange={(e) => updateFormField("name", e.target.value)} required />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">السعر (ريال)</Label>
-                      <Input id="price" type="number" value={form.price} onChange={handleChange} required />
+                      <Input id="price" type="number" value={form.price} onChange={(e) => updateFormField("price", e.target.value)} required />
                     </div>
                     <div>
                       <Label htmlFor="stock">الكمية</Label>
-                      <Input id="stock" type="number" value={form.stock} onChange={handleChange} />
+                      <Input id="stock" type="number" value={form.stock} onChange={(e) => updateFormField("stock", e.target.value)} />
                     </div>
                   </div>
 
                   <div>
                     <Label htmlFor="category">الفئة</Label>
-                    <Input id="category" value={form.category} onChange={handleChange} />
+                    <Input id="category" value={form.category} onChange={(e) => updateFormField("category", e.target.value)} />
                   </div>
 
                   <div>
                     <Label htmlFor="image">صورة المنتج</Label>
-                    <Input id="image" type="file" accept="image/*" onChange={handleFileChange} />
+                    <Input id="image" type="file" accept="image/*" onChange={(e) => updateFormField("image", e.target.files?.[0] ?? null)} />
                     {editingProduct?.image && (
                       <img
-                        src={`http://127.0.0.1:8000/storage/${editingProduct.image}`}
+                        src={editingProduct.image.startsWith("http") ? editingProduct.image : `http://127.0.0.1:8000/storage/${editingProduct.image}`}
                         alt="Current"
                         className="w-24 h-24 object-cover mt-2 rounded"
                       />
@@ -249,7 +297,6 @@ const AdminServices = () => {
           )}
         </div>
 
-        {/* ✅ التبويبات والجدول والعنوان الداخلي من اليمين إلى اليسار */}
         <div dir="rtl">
           <Tabs defaultValue="البقالة">
             <TabsList className="grid grid-cols-5">
@@ -263,7 +310,7 @@ const AdminServices = () => {
             {categories.map((cat) => (
               <TabsContent key={cat} value={cat}>
                 <Card>
-                  <CardHeader className="text-right"> {/* ✅ عنوان القسم يمين */}
+                  <CardHeader className="text-right">
                     <CardTitle>{cat}</CardTitle>
                   </CardHeader>
                   <CardContent>

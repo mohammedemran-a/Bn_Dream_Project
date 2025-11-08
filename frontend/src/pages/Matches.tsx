@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -14,21 +15,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, Calendar, Tv } from "lucide-react";
-import { useMatchesStore, Prediction } from "@/store/useMatchesStore";
+import { getLeaderboard, getUserPredictions, postPrediction } from "@/api/predictions.ts";
+import { getMatches, Match as API_Match } from "@/api/football_matches.ts";
+
+// 🔹 واجهة البيانات المستخدمة في الصفحة
+export type Match = API_Match;
+
+export type Prediction = {
+  match_id: number;
+  team1: number;
+  team2: number;
+  submitted: boolean;
+};
+
+export type LeaderboardItem = {
+  user_id: number;
+  total_points: number;
+  user?: {
+    name: string;
+  };
+};
 
 const Matches = () => {
-  const {
-    matches,
-    fetchMatches,
-    predictions,
-    fetchUserPredictions,
-    postPrediction,
-    leaderboard,
-    fetchLeaderboard,
-  } = useMatchesStore();
-
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [userId, setUserId] = useState<number | null>(null);
+  const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
 
   // 🧩 تحميل user_id من localStorage
   useEffect(() => {
@@ -36,17 +47,44 @@ const Matches = () => {
     if (storedUserId) setUserId(Number(storedUserId));
   }, []);
 
-  // 🟢 جلب البيانات
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      await fetchMatches();
-      if (userId) await fetchUserPredictions(userId);
-      await fetchLeaderboard();
-      setLoading(false);
-    };
-    fetchData();
-  }, [userId, fetchMatches, fetchUserPredictions, fetchLeaderboard]);
+  // 🟢 جلب المباريات
+  const { data: matches = [], isLoading: loadingMatches } = useQuery<Match[]>({
+    queryKey: ["matches"],
+    queryFn: async () => {
+      const res = await getMatches();
+      return res.data;
+    },
+  });
+
+  // 🟢 جلب توقعات المستخدم
+  const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<Prediction[]>({
+    queryKey: ["userPredictions", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const res = await getUserPredictions(userId);
+      return res.data;
+    },
+    enabled: !!userId,
+  });
+
+ const { data: leaderboard = [], isLoading: loadingLeaderboard } = useQuery<LeaderboardItem[]>({
+  queryKey: ["leaderboard"],
+  queryFn: getLeaderboard, // مباشرة
+});
+
+  // 🟢 إرسال توقع جديد
+  const predictionMutation = useMutation({
+    mutationFn: (data: { matchId: number; team1: number; team2: number }) =>
+      postPrediction({
+        user_id: userId!,
+        match_id: data.matchId,
+        team1: data.team1,
+        team2: data.team2,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userPredictions"] });
+    },
+  });
 
   // ⚙️ تغيير القيم في التوقع
   const handlePredictionChange = (
@@ -55,35 +93,51 @@ const Matches = () => {
     value: string
   ) => {
     const currentPrediction: Prediction = predictions[matchId] ?? {
-      team1: "",
-      team2: "",
+      match_id: matchId,
+      team1: 0,
+      team2: 0,
       submitted: false,
     };
 
     if (currentPrediction.submitted) return;
 
-    useMatchesStore.setState({
-      predictions: {
-        ...predictions,
-        [matchId]: {
-          ...currentPrediction,
-          [team]: value,
-        },
+    setPredictions({
+      ...predictions,
+      [matchId]: {
+        ...currentPrediction,
+        [team]: Number(value),
       },
     });
   };
 
   // 🟢 إرسال التوقع
-  const handleSubmitPrediction = async (matchId: number) => {
+  const handleSubmitPrediction = (matchId: number) => {
     if (!userId) return alert("🚫 يجب تسجيل الدخول أولاً");
-    await postPrediction(userId, matchId);
+
+    const prediction = predictions[matchId];
+    if (!prediction?.team1 && !prediction?.team2) {
+      return alert("❌ الرجاء إدخال التوقعين قبل الإرسال");
+    }
+
+    predictionMutation.mutate({
+      matchId,
+      team1: prediction.team1,
+      team2: prediction.team2,
+    });
+
+    setPredictions({
+      ...predictions,
+      [matchId]: { ...prediction, submitted: true },
+    });
   };
+
+  const loading = loadingMatches || loadingPredictions || loadingLeaderboard;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-lg text-muted-foreground animate-pulse">
-          جاري تحميل المباريات...
+          جاري تحميل البيانات...
         </p>
       </div>
     );
@@ -119,7 +173,14 @@ const Matches = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {matches.map((match, index) => {
                   const prediction: Prediction =
-                    predictions[match.id] ?? { team1: "", team2: "", submitted: false };
+                    predictions[match.id!] ??
+                    userPredictions.find((p) => p.match_id === match.id) ?? {
+                      match_id: match.id!,
+                      team1: 0,
+                      team2: 0,
+                      submitted: false,
+                    };
+
                   const isSubmitted = prediction.submitted;
 
                   return (
@@ -163,17 +224,15 @@ const Matches = () => {
 
                           <div className="flex items-center gap-3 justify-center">
                             <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {match.team1}
-                              </p>
+                              <p className="text-sm text-muted-foreground mb-2">{match.team1}</p>
                               <Input
                                 type="number"
                                 placeholder="0"
-                                min="0"
+                                min={0}
                                 className="w-16 text-center text-xl font-bold"
                                 value={prediction.team1}
                                 onChange={(e) =>
-                                  handlePredictionChange(match.id, "team1", e.target.value)
+                                  handlePredictionChange(match.id!, "team1", e.target.value)
                                 }
                                 disabled={isSubmitted}
                               />
@@ -182,17 +241,15 @@ const Matches = () => {
                             <div className="text-2xl font-bold text-primary">-</div>
 
                             <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {match.team2}
-                              </p>
+                              <p className="text-sm text-muted-foreground mb-2">{match.team2}</p>
                               <Input
                                 type="number"
                                 placeholder="0"
-                                min="0"
+                                min={0}
                                 className="w-16 text-center text-xl font-bold"
                                 value={prediction.team2}
                                 onChange={(e) =>
-                                  handlePredictionChange(match.id, "team2", e.target.value)
+                                  handlePredictionChange(match.id!, "team2", e.target.value)
                                 }
                                 disabled={isSubmitted}
                               />
@@ -201,8 +258,8 @@ const Matches = () => {
 
                           <Button
                             className="w-full mt-3 shadow-elegant"
-                            onClick={() => handleSubmitPrediction(match.id)}
-                            disabled={isSubmitted}
+                            onClick={() => handleSubmitPrediction(match.id!)}
+                            disabled={isSubmitted || predictionMutation.isPending}
                           >
                             {isSubmitted ? "✅ تم الإرسال" : "إرسال التوقع"}
                           </Button>
@@ -216,7 +273,7 @@ const Matches = () => {
           </div>
         </section>
 
-        {/* 🏆 المتصدرين */}
+        {/* 🏆 جدول المتصدرين */}
         <section className="py-12 px-4 bg-muted/30">
           <div className="container mx-auto">
             <div className="text-center mb-8 animate-fade-in">
@@ -252,9 +309,7 @@ const Matches = () => {
                             {index + 1}
                           </div>
                           <div>
-                            <p className="font-semibold">
-                              {item.user?.name || "مستخدم غير معروف"}
-                            </p>
+                            <p className="font-semibold">{item.user?.name || "مستخدم غير معروف"}</p>
                             <p className="text-sm text-muted-foreground">
                               مجموع النقاط: {item.total_points}
                             </p>

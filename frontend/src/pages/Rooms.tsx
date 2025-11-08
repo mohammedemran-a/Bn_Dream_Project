@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+// src/pages/Rooms.tsx
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -26,21 +27,15 @@ import {
   CircleDot,
   PartyPopper,
 } from "lucide-react";
-import { useRoomsStore } from "@/store/useRoomsStore"; // ✅ Zustand store
-import { createBooking } from "@/api/bookings.js"; 
+import { getRooms, Room } from "@/api/rooms";
+import { createBooking } from "@/api/bookings.ts";
+import { toast } from "sonner";
 
-// 🟡 مكون عرض كل غرفة
-const RoomCard = ({ room, onBooked }) => {
-  const handleBooking = async () => {
-    if (room.status === "محجوز") {
-      alert("❌ هذه الغرفة محجوزة بالفعل.");
-      return;
-    }
+const RoomCard = ({ room }: { room: Room }) => {
+  const queryClient = useQueryClient();
 
-    const confirmBooking = window.confirm(`هل ترغب في حجز "${room.name}"؟`);
-    if (!confirmBooking) return;
-
-    try {
+  const bookingMutation = useMutation({
+    mutationFn: async () => {
       const bookingData = {
         user_id: 1,
         room_id: room.id,
@@ -52,14 +47,22 @@ const RoomCard = ({ room, onBooked }) => {
         total_price: room.price,
         status: "قيد المراجعة",
       };
+      return await createBooking(bookingData);
+    },
+    onSuccess: () => {
+      toast.success("✅ تم إنشاء الحجز بنجاح!");
+      queryClient.invalidateQueries({ queryKey: ["rooms"] }); // تحديث الغرف
+    },
+    onError: () => toast.error("⚠️ حدث خطأ أثناء تنفيذ الحجز."),
+  });
 
-      await createBooking(bookingData);
-
-      alert("✅ تم إنشاء الحجز بنجاح!");
-      onBooked(room.id); // تحديث الحالة في الواجهة
-    } catch (error) {
-      console.error("خطأ أثناء الحجز:", error);
-      alert("⚠️ حدث خطأ أثناء تنفيذ الحجز.");
+  const handleBooking = () => {
+    if (room.status === "محجوز") {
+      toast.error("❌ هذه الغرفة محجوزة بالفعل.");
+      return;
+    }
+    if (confirm(`هل ترغب في حجز "${room.name}"؟`)) {
+      bookingMutation.mutate();
     }
   };
 
@@ -86,7 +89,7 @@ const RoomCard = ({ room, onBooked }) => {
 
       <CardHeader>
         <CardTitle className="text-2xl">{room.name}</CardTitle>
-        <CardDescription className="text-base">{room.description}</CardDescription>
+        <CardDescription>{room.description}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -100,11 +103,8 @@ const RoomCard = ({ room, onBooked }) => {
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span>
-              {room.capacity} {room.capacity > 20 ? "شخص" : "أشخاص"}
-            </span>
+            <span>{room.capacity} {room.capacity > 20 ? "شخص" : "أشخاص"}</span>
           </div>
-
           {room.features?.includes("واي فاي") && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Wifi className="h-4 w-4" />
@@ -130,39 +130,66 @@ const RoomCard = ({ room, onBooked }) => {
         <Button
           className="w-full shadow-elegant"
           onClick={handleBooking}
-          disabled={room.status === "محجوز"}
+          disabled={room.status === "محجوز" || bookingMutation.isPending}
         >
-          {room.status === "محجوز" ? "محجوزة" : "احجز الآن"}
+          {room.status === "محجوز"
+            ? "محجوزة"
+            : bookingMutation.isPending
+            ? "جاري الحجز..."
+            : "احجز الآن"}
         </Button>
       </CardFooter>
     </Card>
   );
 };
 
-// 🟣 الصفحة الرئيسية للغرف
+const CategorySection = ({
+  title,
+  rooms,
+}: {
+  title: string;
+  rooms: Room[];
+}) => (
+  <>
+    <div className="mb-6 p-6 bg-card rounded-lg border">
+      <h3 className="text-2xl font-bold mb-2">{title}</h3>
+      <p className="text-muted-foreground">عرض جميع {title} المتاحة لدينا</p>
+    </div>
+
+    {rooms.length === 0 ? (
+      <p className="text-center text-muted-foreground">
+        لا توجد غرف في هذه الفئة حاليا.
+      </p>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {rooms.map((room, index) => (
+          <div key={room.id} style={{ animationDelay: `${index * 0.05}s` }}>
+            <RoomCard room={room} />
+          </div>
+        ))}
+      </div>
+    )}
+  </>
+);
+
 const Rooms = () => {
-  const { rooms, fetchRooms, updateRoomStatus, loading } = useRoomsStore();
+  const { data: rooms = [], isLoading } = useQuery<Room[], Error>({
+    queryKey: ["rooms"],
+    queryFn: getRooms,
+  });
 
-  useEffect(() => {
-    fetchRooms();
-  }, [fetchRooms]);
-
-  const handleRoomBooked = (roomId) => {
-    updateRoomStatus(roomId, "محجوز");
-  };
-
-  // if (loading) {
-  //   return (
-  //     <div className="flex justify-center items-center min-h-screen text-xl">
-  //       جاري التحميل...
-  //     </div>
-  //   );
-  // }
   const privateRooms = rooms.filter((r) => r.category === "غرف خاصة");
   const publicRooms = rooms.filter((r) => r.category === "غرف عامة");
   const eventHalls = rooms.filter((r) => r.category === "صالات المناسبات");
   const playstationRooms = rooms.filter((r) => r.category === "غرف البلايستيشن");
   const billiardRooms = rooms.filter((r) => r.category === "صالات البلياردو");
+
+  if (isLoading)
+    return (
+      <div className="flex justify-center items-center min-h-screen text-xl">
+        جاري تحميل الغرف...
+      </div>
+    );
 
   return (
     <div className="min-h-screen">
@@ -181,66 +208,30 @@ const Rooms = () => {
           <div className="container mx-auto">
             <Tabs defaultValue="private" className="w-full" dir="rtl">
               <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-8 h-auto">
-                <TabsTrigger value="private" className="gap-2 py-3">
-                  <Users className="h-5 w-5" />
-                  <span>غرف خاصة</span>
-                </TabsTrigger>
-                <TabsTrigger value="public" className="gap-2 py-3">
-                  <Users className="h-5 w-5" />
-                  <span>غرف عامة</span>
-                </TabsTrigger>
-                <TabsTrigger value="events" className="gap-2 py-3">
-                  <PartyPopper className="h-5 w-5" />
-                  <span>صالات المناسبات</span>
-                </TabsTrigger>
-                <TabsTrigger value="playstation" className="gap-2 py-3">
-                  <Gamepad2 className="h-5 w-5" />
-                  <span>بلايستيشن</span>
-                </TabsTrigger>
-                <TabsTrigger value="billiard" className="gap-2 py-3">
-                  <CircleDot className="h-5 w-5" />
-                  <span>بلياردو</span>
-                </TabsTrigger>
+                <TabsTrigger value="private">غرف خاصة</TabsTrigger>
+                <TabsTrigger value="public">غرف عامة</TabsTrigger>
+                <TabsTrigger value="events">صالات المناسبات</TabsTrigger>
+                <TabsTrigger value="playstation">بلايستيشن</TabsTrigger>
+                <TabsTrigger value="billiard">بلياردو</TabsTrigger>
               </TabsList>
 
               <TabsContent value="private">
-                <CategorySection
-                  title="الغرف الخاصة"
-                  rooms={privateRooms}
-                  onBooked={handleRoomBooked}
-                />
+                <CategorySection title="الغرف الخاصة" rooms={privateRooms} />
               </TabsContent>
-
               <TabsContent value="public">
-                <CategorySection
-                  title="الغرف العامة"
-                  rooms={publicRooms}
-                  onBooked={handleRoomBooked}
-                />
+                <CategorySection title="الغرف العامة" rooms={publicRooms} />
               </TabsContent>
-
               <TabsContent value="events">
-                <CategorySection
-                  title="صالات المناسبات"
-                  rooms={eventHalls}
-                  onBooked={handleRoomBooked}
-                />
+                <CategorySection title="صالات المناسبات" rooms={eventHalls} />
               </TabsContent>
-
               <TabsContent value="playstation">
                 <CategorySection
                   title="غرف البلايستيشن"
                   rooms={playstationRooms}
-                  onBooked={handleRoomBooked}
                 />
               </TabsContent>
-
               <TabsContent value="billiard">
-                <CategorySection
-                  title="صالات البلياردو"
-                  rooms={billiardRooms}
-                  onBooked={handleRoomBooked}
-                />
+                <CategorySection title="صالات البلياردو" rooms={billiardRooms} />
               </TabsContent>
             </Tabs>
           </div>
@@ -250,31 +241,5 @@ const Rooms = () => {
     </div>
   );
 };
-
-// 🟠 مكون عرض الفئة
-const CategorySection = ({ title, rooms, onBooked }) => (
-  <>
-    <div className="mb-6 p-6 bg-card rounded-lg border">
-      <h3 className="text-2xl font-bold mb-2">{title}</h3>
-      <p className="text-muted-foreground">
-        عرض جميع {title} المتاحة لدينا
-      </p>
-    </div>
-
-    {rooms.length === 0 ? (
-      <p className="text-center text-muted-foreground">
-        لا توجد غرف في هذه الفئة حاليا.
-      </p>
-    ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {rooms.map((room, index) => (
-          <div key={room.id} style={{ animationDelay: `${index * 0.05}s` }}>
-            <RoomCard room={room} onBooked={onBooked} />
-          </div>
-        ))}
-      </div>
-    )}
-  </>
-);
 
 export default Rooms;

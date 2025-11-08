@@ -11,4 +11,3 @@ export const sendContactMessage = async (data) => {
 export const getAllContacts = async () => {
   return await axios.get("/api/contact");
 };
-

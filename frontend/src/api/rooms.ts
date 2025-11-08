@@ -1,0 +1,37 @@
+// src/api/rooms.ts
+import axios from "axios";
+
+const API_URL = "http://localhost:8000/api/rooms";
+
+export interface Room {
+  id: number;
+  category: string;
+  name: string;
+  price: number;
+  capacity: number;
+  status: string;
+  description: string;
+  features: string[];
+  image_path?: string;
+}
+
+// 🟢 جلب كل الغرف
+export const getRooms = async (): Promise<Room[]> => {
+  const { data } = await axios.get(API_URL);
+  return data;
+};
+
+// 🟢 تحديث الغرفة
+export const updateRoom = async (id: number, formData: FormData) => {
+  return await axios.post(`${API_URL}/${id}?_method=PUT`, formData);
+};
+
+// 🟢 إنشاء غرفة
+export const createRoom = async (formData: FormData) => {
+  return await axios.post(API_URL, formData);
+};
+
+// 🟢 حذف غرفة
+export const deleteRoom = async (id: number) => {
+  return await axios.delete(`${API_URL}/${id}`);
+};

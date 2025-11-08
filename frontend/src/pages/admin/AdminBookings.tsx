@@ -1,25 +1,39 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient, UseQueryResult } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
-import { useBookingsStore } from "@/store/useBookingsStore";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getBookings, updateBookingStatus, deleteBooking, Booking } from "@/api/bookings.ts";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const AdminBookings = () => {
-  const { bookings, fetchBookings, updateStatus, deleteBooking, loading } = useBookingsStore();
   const [statusFilter, setStatusFilter] = useState<string>("الكل");
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (hasPermission("bookings_view")) fetchBookings(statusFilter);
-  }, [statusFilter, fetchBookings, hasPermission]);
+  // ✅ useQuery مع النوع الصحيح
+  const query: UseQueryResult<Booking[], Error> = useQuery<Booking[], Error>({
+    queryKey: ["bookings", statusFilter],
+    queryFn: () => getBookings(statusFilter),
+  });
+
+  const bookings = query.data ?? [];
+  const isLoading = query.isLoading;
+
+  // ✅ useMutation لتحديث الحالة
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) => updateBookingStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings", statusFilter] }),
+  });
+
+  // ✅ useMutation للحذف
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteBooking(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings", statusFilter] }),
+  });
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -49,25 +63,23 @@ const AdminBookings = () => {
         </div>
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>قائمة الحجوزات</CardTitle>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="تصفية حسب الحالة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="الكل">الكل</SelectItem>
-                  <SelectItem value="مؤكد">مؤكد</SelectItem>
-                  <SelectItem value="قيد المراجعة">قيد المراجعة</SelectItem>
-                  <SelectItem value="ملغي">ملغي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>قائمة الحجوزات</CardTitle>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="تصفية حسب الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="الكل">الكل</SelectItem>
+                <SelectItem value="مؤكد">مؤكد</SelectItem>
+                <SelectItem value="قيد المراجعة">قيد المراجعة</SelectItem>
+                <SelectItem value="ملغي">ملغي</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
 
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <p className="text-center py-6">جاري تحميل الحجوزات...</p>
             ) : (
               <Table>
@@ -98,36 +110,44 @@ const AdminBookings = () => {
                             {booking.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            {hasPermission("bookings_edit") && booking.status === "قيد المراجعة" && (
-                              <>
-                                <Button size="sm" variant="outline" className="text-green-600"
-                                  onClick={() => updateStatus(booking.id, "مؤكد")}
-                                >
-                                  تأكيد
-                                </Button>
-                                <Button size="sm" variant="outline" className="text-red-600"
-                                  onClick={() => updateStatus(booking.id, "ملغي")}
-                                >
-                                  إلغاء
-                                </Button>
-                              </>
-                            )}
-                            {hasPermission("bookings_delete") && (
+                        <TableCell className="text-right flex gap-2 justify-end">
+                          {hasPermission("bookings_edit") && booking.status === "قيد المراجعة" && (
+                            <>
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                className="text-destructive"
-                                onClick={() => {
-                                  if (confirm("هل أنت متأكد من حذف هذا الحجز؟"))
-                                    deleteBooking(booking.id);
-                                }}
+                                variant="outline"
+                                className="text-green-600"
+                                onClick={() =>
+                                  updateStatusMutation.mutate({ id: booking.id, status: "مؤكد" })
+                                }
                               >
-                                حذف
+                                تأكيد
                               </Button>
-                            )}
-                          </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600"
+                                onClick={() =>
+                                  updateStatusMutation.mutate({ id: booking.id, status: "ملغي" })
+                                }
+                              >
+                                إلغاء
+                              </Button>
+                            </>
+                          )}
+                          {hasPermission("bookings_delete") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              onClick={() => {
+                                if (confirm("هل أنت متأكد من حذف هذا الحجز؟"))
+                                  deleteMutation.mutate(booking.id);
+                              }}
+                            >
+                              حذف
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

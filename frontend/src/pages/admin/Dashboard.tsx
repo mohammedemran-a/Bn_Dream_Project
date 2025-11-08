@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BedDouble, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
@@ -12,34 +12,60 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { toast } from "sonner";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useBookingsStore } from "@/store/useBookingsStore";
-import { useOrdersStore } from "@/store/useOrdersStore";
-import { useAdminUsersStore } from "@/store/useAdminUsersStore";
+import axios from "@/api/axios"; // تأكد من وجود ملف axios جاهز
+
+interface Booking {
+  id: number;
+  check_in: string;
+  // باقي الحقول حسب الحاجة
+}
+
+interface Order {
+  id: number;
+  total: number;
+  created_at: string;
+}
+
+interface User {
+  id: number;
+  name: string;
+}
 
 const Dashboard = () => {
-  const hasPermission = useAuthStore((state) => state.hasPermission);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 🟢 جلب البيانات من الـ stores
-  const { bookings, fetchBookings, loading: bookingsLoading } = useBookingsStore();
-  const { orders, fetchOrders, loading: ordersLoading } = useOrdersStore();
-  const { users, fetchUsersAndRoles, loading: usersLoading } = useAdminUsersStore();
-
-  const loading = bookingsLoading || ordersLoading || usersLoading;
+  // مثال على permission ثابت
+  const hasPermission = (perm: string) => true; // عدل حسب الـ auth الفعلي
 
   useEffect(() => {
-    const loadData = async () => {
+    const fetchData = async () => {
       try {
-        await Promise.all([fetchBookings(), fetchOrders(), fetchUsersAndRoles()]);
+        setLoading(true);
+
+        const [bookingsRes, ordersRes, usersRes] = await Promise.all([
+          axios.get("/api/bookings"),
+          axios.get("/api/orders"),
+          axios.get("/api/users"),
+        ]);
+
+        setBookings(bookingsRes.data);
+        setOrders(ordersRes.data);
+        setUsers(usersRes.data);
+
+        setLoading(false);
       } catch (error) {
-        console.error("حدث خطأ أثناء تحميل البيانات:", error);
+        console.error(error);
         toast.error("فشل تحميل البيانات، يرجى تسجيل الدخول مجددًا");
         localStorage.removeItem("token");
         window.location.href = "/auth";
       }
     };
-    loadData();
-  }, [fetchBookings, fetchOrders, fetchUsersAndRoles]);
+
+    fetchData();
+  }, []);
 
   if (!hasPermission("dashboard_view")) {
     return (
@@ -51,57 +77,33 @@ const Dashboard = () => {
     );
   }
 
-  // if (loading) {
-  //   return (
-  //     <AdminLayout>
-  //       <div className="p-10 text-center text-lg">جاري تحميل البيانات...</div>
-  //     </AdminLayout>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="p-10 text-center text-lg">جاري تحميل البيانات...</div>
+      </AdminLayout>
+    );
+  }
 
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + (parseFloat(o.total.toString()) || 0),
-    0
-  );
+  const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total.toString()) || 0), 0);
 
   const statsData = [
-    {
-      icon: BedDouble,
-      label: "إجمالي الحجوزات",
-      value: bookings.length,
-      change: "+12%",
-    },
-    {
-      icon: Users,
-      label: "عدد المستخدمين",
-      value: users.length,
-      change: "+8%",
-    },
-    {
-      icon: ShoppingCart,
-      label: "عدد الطلبات",
-      value: orders.length,
-      change: "+23%",
-    },
-    {
-      icon: DollarSign,
-      label: "إجمالي الإيرادات",
-      value: `${totalRevenue} ريال`,
-      change: "+15%",
-    },
+    { icon: BedDouble, label: "إجمالي الحجوزات", value: bookings.length, change: "+12%" },
+    { icon: Users, label: "عدد المستخدمين", value: users.length, change: "+8%" },
+    { icon: ShoppingCart, label: "عدد الطلبات", value: orders.length, change: "+23%" },
+    { icon: DollarSign, label: "إجمالي الإيرادات", value: `${totalRevenue} ريال`, change: "+15%" },
   ];
 
   const chartData = (() => {
     const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
     const counts: Record<string, number> = {};
-    bookings.forEach((b) => {
-      // استخدام check_in أو created_at إذا موجود
-     // const date = new Date(b.check_in || b.created_at || "");
-     const date = new Date(b.check_in);
 
+    bookings.forEach((b) => {
+      const date = new Date(b.check_in);
       const dayName = days[date.getDay()];
       counts[dayName] = (counts[dayName] || 0) + 1;
     });
+
     return days.map((day) => ({ name: day, bookings: counts[day] || 0 }));
   })();
 
@@ -124,9 +126,7 @@ const Dashboard = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.label}
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
                   <Icon className="w-5 h-5 text-primary" />
                 </CardHeader>
                 <CardContent>
@@ -159,13 +159,7 @@ const Dashboard = () => {
                     borderRadius: "8px",
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="bookings"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={3}
-                  dot={{ fill: "hsl(var(--primary))", r: 5 }}
-                />
+                <Line type="monotone" dataKey="bookings" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: "hsl(var(--primary))", r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

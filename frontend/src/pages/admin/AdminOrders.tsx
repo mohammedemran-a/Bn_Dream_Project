@@ -13,36 +13,92 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Check, Truck, X, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useOrdersStore } from "@/store/useOrdersStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getAllOrders, updateOrderStatus, deleteOrder } from "@/api/orders.ts";
+
+interface Order {
+  id: number;
+  user: { name: string; phone?: string } | null;
+  total: number;
+  status: string;
+  created_at: string;
+  products: {
+    id: number;
+    name: string;
+    pivot: { quantity: number; price: number };
+  }[];
+}
 
 const AdminOrders = () => {
   const hasPermission = useAuthStore((state) => state.hasPermission);
-  const { orders, loading, fetchOrders, updateStatus, removeOrder } = useOrdersStore();
+  const queryClient = useQueryClient();
 
-  const handleUpdateStatus = async (id: number, newStatus: string) => {
+  // -------------------------
+  // جلب الطلبات
+  // -------------------------
+  const { data: orders = [], isLoading, refetch } = useQuery<Order[]>({
+    queryKey: ["orders"],
+    queryFn: getAllOrders,
+    enabled: hasPermission("orders_view"),
+  });
+
+  // -------------------------
+  // تحديث حالة الطلب
+  // -------------------------
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      updateOrderStatus(id, status),
+    onSuccess: (_, { id, status }) => {
+      toast.success("تم تحديث حالة الطلب ✅");
+
+      // تحديث الحالة محليًا
+      queryClient.setQueryData<Order[]>(["orders"], (old) =>
+        old?.map((order) => (order.id === id ? { ...order, status } : order)) || []
+      );
+    },
+    onError: () => {
+      toast.error("فشل تحديث حالة الطلب ❌");
+    },
+  });
+
+  // -------------------------
+  // حذف الطلب
+  // -------------------------
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteOrder(id),
+    onSuccess: (_, id) => {
+      toast.success("تم حذف الطلب بنجاح ✅");
+
+      // حذف الطلب محليًا
+      queryClient.setQueryData<Order[]>(["orders"], (old) =>
+        old?.filter((order) => order.id !== id) || []
+      );
+    },
+    onError: () => {
+      toast.error("فشل حذف الطلب ❌");
+    },
+  });
+
+  // -------------------------
+  // الوظائف
+  // -------------------------
+  const handleUpdateStatus = (id: number, status: string) => {
     if (!hasPermission("orders_process")) {
       toast.error("🚫 ليس لديك صلاحية لمعالجة الطلبات");
       return;
     }
-    await updateStatus(id, newStatus);
+    updateStatusMutation.mutate({ id, status });
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!hasPermission("orders_delete")) {
       toast.error("🚫 ليس لديك صلاحية لحذف الطلبات");
       return;
     }
-
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا الطلب نهائيًا؟")) return;
-    await removeOrder(id);
+    deleteMutation.mutate(id);
   };
-
-  useEffect(() => {
-    if (hasPermission("orders_view")) {
-      fetchOrders();
-    }
-  }, [fetchOrders, hasPermission]);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -87,15 +143,15 @@ const AdminOrders = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchOrders}
-              disabled={loading}
+              onClick={() => refetch()}
+              disabled={isLoading}
             >
               🔄 تحديث
             </Button>
           </CardHeader>
 
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
