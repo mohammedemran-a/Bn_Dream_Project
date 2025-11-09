@@ -39,43 +39,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
-import axios from "@/api/axios";
 
-// ===========================================
-// 📦 API FUNCTIONS
-// ===========================================
-export interface Room {
-  id: number;
-  category: string;
-  name: string;
-  price: number;
-  capacity: number;
-  status: string;
-  description: string;
-  features: string;
-  image_path?: string;
-}
-
-const API_URL = "/api/rooms";
-
-const getRooms = async (): Promise<Room[]> => {
-  const response = await axios.get(API_URL);
-  return response.data;
-};
-
-const createRoom = async (data: FormData) => {
-  const response = await axios.post(API_URL, data);
-  return response.data;
-};
-
-const updateRoom = async (id: number, data: FormData) => {
-  const response = await axios.post(`${API_URL}/${id}?_method=PUT`, data);
-  return response.data;
-};
-
-const deleteRoom = async (id: number) => {
-  await axios.delete(`${API_URL}/${id}`);
-};
+// ✅ استدعاء دوال الـ API من الملف الخارجي
+import {
+  getRooms,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  type Room,
+} from "@/api/rooms";
 
 // ===========================================
 // 🧩 COMPONENT
@@ -103,13 +75,11 @@ const AdminRooms = () => {
   const queryClient = useQueryClient();
   const hasPermission = useAuthStore((s) => s.hasPermission);
 
-  // ✅ جلب الغرف عبر React Query
   const { data: rooms = [], isLoading }: UseQueryResult<Room[], Error> = useQuery({
     queryKey: ["rooms"],
     queryFn: getRooms,
   });
 
-  // ✅ Mutations
   const createMutation = useMutation({
     mutationFn: (formData: FormData) => createRoom(formData),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["rooms"] }),
@@ -125,7 +95,6 @@ const AdminRooms = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["rooms"] }),
   });
 
-  // ✅ الحالة المحلية للنموذج
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form, setForm] = useState<RoomForm>({
@@ -139,7 +108,6 @@ const AdminRooms = () => {
     image: null,
   });
 
-  // ✅ التعامل مع تغييرات الحقول
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setForm((prev) => ({ ...prev, [id]: value }));
@@ -149,28 +117,6 @@ const AdminRooms = () => {
     if (e.target.files && e.target.files[0]) {
       setForm((prev) => ({ ...prev, image: e.target.files![0] }));
     }
-  };
-
-  // ✅ حفظ أو تحديث الغرفة
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (value !== null) formData.append(key, value as string | Blob);
-    });
-
-    if (editingRoom) {
-      if (!hasPermission("rooms_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
-      updateMutation.mutate({ id: editingRoom.id, data: formData });
-    } else {
-      if (!hasPermission("rooms_create")) return alert("🚫 ليس لديك صلاحية الإضافة!");
-      createMutation.mutate(formData);
-    }
-
-    setIsDialogOpen(false);
-    setEditingRoom(null);
-    resetForm();
   };
 
   const resetForm = () => {
@@ -186,7 +132,33 @@ const AdminRooms = () => {
     });
   };
 
-  // ✅ تعديل غرفة
+  // ✅ إرسال النموذج (إضافة أو تعديل)
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("category", form.category);
+    formData.append("name", form.name);
+    formData.append("price", Number(form.price).toString());
+    formData.append("capacity", Number(form.capacity).toString());
+    formData.append("status", form.status);
+    formData.append("description", form.description);
+    formData.append("features", form.features);
+    if (form.image) formData.append("image", form.image);
+
+    if (editingRoom) {
+      if (!hasPermission("rooms_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
+      updateMutation.mutate({ id: editingRoom.id, data: formData });
+    } else {
+      if (!hasPermission("rooms_create")) return alert("🚫 ليس لديك صلاحية الإضافة!");
+      createMutation.mutate(formData);
+    }
+
+    setIsDialogOpen(false);
+    setEditingRoom(null);
+    resetForm();
+  };
+
   const handleEdit = (room: Room) => {
     setEditingRoom(room);
     setForm({
@@ -196,13 +168,12 @@ const AdminRooms = () => {
       capacity: room.capacity.toString(),
       status: room.status,
       description: room.description,
-      features: room.features,
+      features: Array.isArray(room.features) ? room.features.join(", ") : room.features,
       image: null,
     });
     setIsDialogOpen(true);
   };
 
-  // ✅ حذف غرفة
   const handleDelete = (id: number) => {
     if (!hasPermission("rooms_delete")) return alert("🚫 ليس لديك صلاحية الحذف!");
     if (confirm("هل أنت متأكد من حذف هذه الغرفة؟")) {
@@ -210,20 +181,19 @@ const AdminRooms = () => {
     }
   };
 
-  // ✅ جدول الغرف حسب التصنيف
   const RoomsTable = ({ category }: { category: string }) => {
     const filtered = rooms.filter((r) => r.category === category);
     return (
       <div dir="rtl" className="overflow-x-auto">
-        <Table className="min-w-full border-collapse text-center">
+        <Table className="text-right w-full">
           <TableHeader>
             <TableRow>
-               <TableHead className="text-center w-[150px]">الصورة</TableHead>
-            <TableHead className="text-center w-[200px]">الاسم</TableHead>
-            <TableHead className="text-center w-[150px]">السعر</TableHead>
-            <TableHead className="text-center w-[100px]">السعة</TableHead>
-            <TableHead className="text-center w-[120px]">الحالة</TableHead>
-            <TableHead className="text-center w-[150px]">العمليات</TableHead>
+              <TableHead className="text-center w-[150px]">الصورة</TableHead>
+              <TableHead className="text-center w-[200px]">الاسم</TableHead>
+              <TableHead className="text-center w-[150px]">السعر</TableHead>
+              <TableHead className="text-center w-[100px]">السعة</TableHead>
+              <TableHead className="text-center w-[120px]">الحالة</TableHead>
+              <TableHead className="text-center w-[150px]">العمليات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

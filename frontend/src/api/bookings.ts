@@ -12,6 +12,9 @@ export interface Booking {
   guests: number;
   total_price: number;
   status: string;
+  duration_type?: "hours" | "days";  // ✅ مهم
+  duration_value?: number;           // ✅ مهم
+
 }
 
 const API_URL = "/api/bookings";

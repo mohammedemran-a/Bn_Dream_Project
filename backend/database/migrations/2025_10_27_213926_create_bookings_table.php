@@ -20,6 +20,9 @@ return new class extends Migration
             $table->integer('guests');
             $table->decimal('total_price', 10, 2);
             $table->enum('status', ['قيد المراجعة', 'مؤكد', 'ملغي'])->default('قيد المراجعة');
+            $table->enum('duration_type', ['hours', 'days']);
+            $table->integer('duration_value');
+
             $table->timestamps();
         });
     }

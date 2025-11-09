@@ -39,6 +39,8 @@ class BookingController extends Controller
             'guests' => 'required|integer|min:1',
             'total_price' => 'required|numeric|min:0',
             'status' => 'nullable|string',
+            'duration_type' => 'required|in:hours,days',
+            'duration_value' => 'required|integer|min:1',
         ]);
 
         $booking = Booking::create($validated);

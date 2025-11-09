@@ -93,6 +93,7 @@ const AdminBookings = () => {
                     <TableHead>الغرفة</TableHead>
                     <TableHead>الوصول</TableHead>
                     <TableHead>المغادرة</TableHead>
+                    <TableHead>المدة</TableHead>
                     <TableHead>الضيوف</TableHead>
                     <TableHead>المبلغ</TableHead>
                     <TableHead>الحالة</TableHead>
@@ -107,6 +108,10 @@ const AdminBookings = () => {
                         <TableCell>{booking.room?.name || `#${booking.room_id}`}</TableCell>
                         <TableCell>{booking.check_in}</TableCell>
                         <TableCell>{booking.check_out}</TableCell>
+                        <TableCell>
+                          {booking.duration_value} 
+                          {booking.duration_type === "hours" ? " ساعة" : " يوم"}
+                        </TableCell>
                         <TableCell>{booking.guests}</TableCell>
                         <TableCell>{booking.total_price} ريال</TableCell>
                         <TableCell>
