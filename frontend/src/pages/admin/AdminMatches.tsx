@@ -305,18 +305,18 @@ export default function AdminMatches() {
             <CardTitle>قائمة المباريات</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table className="w-full text-right">
+            <div dir="rtl"  className="overflow-x-auto">
+              <Table  className="min-w-full border-collapse text-center">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الفريق الأول</TableHead>
-                    <TableHead>الفريق الثاني</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الوقت</TableHead>
-                    <TableHead>القناة</TableHead>
-                    <TableHead>النتيجة</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>العمليات</TableHead>
+                <TableHead className="text-center w-[180px]">الفريق الأول</TableHead>
+                <TableHead className="text-center w-[180px]">الفريق الثاني</TableHead>
+                <TableHead className="text-center w-[140px]">التاريخ</TableHead>
+                <TableHead className="text-center w-[120px]">الوقت</TableHead>
+                <TableHead className="text-center w-[200px]">القناة</TableHead>
+                <TableHead className="text-center w-[120px]">النتيجة</TableHead>
+                <TableHead className="text-center w-[120px]">الحالة</TableHead>
+                <TableHead className="text-center w-[150px]">العمليات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

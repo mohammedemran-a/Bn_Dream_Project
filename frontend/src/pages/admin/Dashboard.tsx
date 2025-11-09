@@ -1,32 +1,51 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BedDouble, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { toast } from "sonner";
-
 import { useAuthStore } from "@/store/useAuthStore";
 import { useQuery } from "@tanstack/react-query";
-
 import { getBookings, Booking } from "@/api/bookings";
 import { getAllOrders, Order } from "@/api/orders";
 import { getAllUsers, IUser as User } from "@/api/users";
 
 const Dashboard = () => {
   const { user } = useAuthStore();
-  const hasPermission = (perm: string) => user?.permissions?.includes(perm) || false;
+  const hasPermission = (perm: string) =>
+    user?.permissions?.includes(perm) || false;
 
-  // ✅ queryFn لا تستقبل أي معاملات خارجية
-  const { data: bookings = [], isLoading: bookingsLoading, error: bookingsError } = useQuery<Booking[], Error>({
+  // ✅ تحميل البيانات
+  const {
+    data: bookings = [],
+    isLoading: bookingsLoading,
+    error: bookingsError,
+  } = useQuery<Booking[], Error>({
     queryKey: ["bookings"],
-    queryFn: () => getBookings(), // هنا لا تمرر status
+    queryFn: () => getBookings(),
   });
 
-  const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[], Error>({
+  const {
+    data: orders = [],
+    isLoading: ordersLoading,
+    error: ordersError,
+  } = useQuery<Order[], Error>({
     queryKey: ["orders"],
     queryFn: getAllOrders,
   });
 
-  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<User[], Error>({
+  const {
+    data: users = [],
+    isLoading: usersLoading,
+    error: usersError,
+  } = useQuery<User[], Error>({
     queryKey: ["users"],
     queryFn: getAllUsers,
   });
@@ -59,8 +78,13 @@ const Dashboard = () => {
     );
   }
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total.toString()) || 0), 0);
+  // 💰 حساب الإيرادات
+  const totalRevenue = orders.reduce(
+    (sum, o) => sum + (parseFloat(o.total.toString()) || 0),
+    0
+  );
 
+  // 📊 بيانات الإحصائيات
   const statsData = [
     { icon: BedDouble, label: "إجمالي الحجوزات", value: bookings.length, change: "+12%" },
     { icon: Users, label: "عدد المستخدمين", value: users.length, change: "+8%" },
@@ -68,6 +92,7 @@ const Dashboard = () => {
     { icon: DollarSign, label: "إجمالي الإيرادات", value: `${totalRevenue} ريال`, change: "+15%" },
   ];
 
+  // 📈 بيانات الرسم البياني اليومي
   const chartData = (() => {
     const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
     const counts: Record<string, number> = {};
@@ -84,11 +109,13 @@ const Dashboard = () => {
   return (
     <AdminLayout>
       <div className="space-y-8 animate-fade-in">
+        {/* العنوان الرئيسي */}
         <div>
           <h1 className="text-3xl font-bold mb-2">لوحة التحكم</h1>
           <p className="text-muted-foreground">نظرة عامة على نشاط النظام</p>
         </div>
 
+        {/* بطاقات الإحصائيات */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -99,7 +126,9 @@ const Dashboard = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {stat.label}
+                  </CardTitle>
                   <Icon className="w-5 h-5 text-primary" />
                 </CardHeader>
                 <CardContent>
@@ -114,21 +143,38 @@ const Dashboard = () => {
           })}
         </div>
 
+        {/* الرسم البياني */}
         <Card className="animate-fade-in" style={{ animationDelay: "400ms" }}>
           <CardHeader>
             <CardTitle>الحجوزات اليومية</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
+          <CardContent className="pt-2">
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 40 }} // ✅ رجعنا المسافة الطبيعية
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <XAxis
+                  dataKey="name"
+                  stroke="hsl(var(--muted-foreground))"
+                  tickMargin={12}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  tickMargin={35} // ✅ تبعد الأرقام عن الخط فقط
+                  tick={{
+                    fontSize: 12,
+                    fill: "hsl(var(--muted-foreground))",
+                  }}
+                  domain={[0, "auto"]}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
+                    direction: "rtl",
                   }}
                 />
                 <Line

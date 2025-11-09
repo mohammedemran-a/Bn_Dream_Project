@@ -119,16 +119,16 @@ const AdminServices = () => {
   const ProductsTable = ({ type }: { type: string }) => {
     const filtered = Array.isArray(products) ? products.filter((p) => p.type === type) : [];
     return (
-      <div dir="rtl">
-        <Table className="w-full text-right">
+      <div dir="rtl" className="overflow-x-auto">
+        <Table className="min-w-full border-collapse text-center">
           <TableHeader>
             <TableRow>
-              <TableHead>الصورة</TableHead>
-              <TableHead>الاسم</TableHead>
-              <TableHead>السعر</TableHead>
-              <TableHead>الكمية</TableHead>
-              <TableHead>الفئة</TableHead>
-              <TableHead>العمليات</TableHead>
+               <TableHead className="text-center w-[150px]">الصورة</TableHead>
+              <TableHead className="text-center w-[250px]">الاسم</TableHead>
+              <TableHead className="text-center w-[150px]">السعر</TableHead>
+              <TableHead className="text-center w-[120px]">الكمية</TableHead>
+              <TableHead className="text-center w-[150px]">الفئة</TableHead>
+              <TableHead className="text-center w-[150px]">العمليات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

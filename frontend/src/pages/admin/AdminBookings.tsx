@@ -14,7 +14,6 @@ const AdminBookings = () => {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const queryClient = useQueryClient();
 
-  // ✅ useQuery مع النوع الصحيح
   const query: UseQueryResult<Booking[], Error> = useQuery<Booking[], Error>({
     queryKey: ["bookings", statusFilter],
     queryFn: () => getBookings(statusFilter),
@@ -23,13 +22,11 @@ const AdminBookings = () => {
   const bookings = query.data ?? [];
   const isLoading = query.isLoading;
 
-  // ✅ useMutation لتحديث الحالة
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => updateBookingStatus(id, status),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings", statusFilter] }),
   });
 
-  // ✅ useMutation للحذف
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteBooking(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookings", statusFilter] }),
@@ -37,10 +34,14 @@ const AdminBookings = () => {
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case "مؤكد": return "default";
-      case "قيد المراجعة": return "secondary";
-      case "ملغي": return "destructive";
-      default: return "outline";
+      case "مؤكد":
+        return "default";
+      case "قيد المراجعة":
+        return "secondary";
+      case "ملغي":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
@@ -63,19 +64,22 @@ const AdminBookings = () => {
         </div>
 
         <Card>
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>قائمة الحجوزات</CardTitle>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="تصفية حسب الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="الكل">الكل</SelectItem>
-                <SelectItem value="مؤكد">مؤكد</SelectItem>
-                <SelectItem value="قيد المراجعة">قيد المراجعة</SelectItem>
-                <SelectItem value="ملغي">ملغي</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* ✅ تعديل هذا الجزء فقط لمحاذاة العنوان والقائمة */}
+          <CardHeader>
+            <div dir="rtl" className="flex justify-between items-center">
+              <CardTitle>قائمة الحجوزات</CardTitle>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="تصفية حسب الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="الكل">الكل</SelectItem>
+                  <SelectItem value="مؤكد">مؤكد</SelectItem>
+                  <SelectItem value="قيد المراجعة">قيد المراجعة</SelectItem>
+                  <SelectItem value="ملغي">ملغي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
 
           <CardContent>

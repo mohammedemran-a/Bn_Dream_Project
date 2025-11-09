@@ -4,7 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -16,11 +23,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
-import { getAllUsers, createUser, updateUser, deleteUser, IUser, UserFormData } from "@/api/users.ts";
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  IUser,
+  UserFormData,
+} from "@/api/users.ts";
 import { getRoles, Role } from "@/api/roles";
 import { AxiosError } from "axios";
 
@@ -41,7 +61,11 @@ const AdminUsers = () => {
   // ===============================
   // React Query - Fetch Users & Roles
   // ===============================
-  const { data: usersData, isLoading: loadingUsers, error: usersError } = useQuery<IUser[], Error>({
+  const {
+    data: usersData,
+    isLoading: loadingUsers,
+    error: usersError,
+  } = useQuery<IUser[], Error>({
     queryKey: ["users"],
     queryFn: getAllUsers,
     enabled: hasPermission("users_view"),
@@ -49,7 +73,11 @@ const AdminUsers = () => {
 
   const users: IUser[] = Array.isArray(usersData) ? usersData : [];
 
-  const { data: rolesData, isLoading: loadingRoles, error: rolesError } = useQuery<Role[], Error>({
+  const {
+    data: rolesData,
+    isLoading: loadingRoles,
+    error: rolesError,
+  } = useQuery<Role[], Error>({
     queryKey: ["roles"],
     queryFn: getRoles,
     enabled: hasPermission("users_view"),
@@ -79,11 +107,13 @@ const AdminUsers = () => {
       toast.success("تمت إضافة المستخدم ✅");
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-    onError: (err: unknown) => handleMutationError(err, "فشل في إنشاء المستخدم ❌"),
+    onError: (err: unknown) =>
+      handleMutationError(err, "فشل في إنشاء المستخدم ❌"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UserFormData }) => updateUser(id, data),
+    mutationFn: ({ id, data }: { id: number; data: UserFormData }) =>
+      updateUser(id, data),
     onSuccess: () => {
       toast.success("تم تعديل المستخدم ✅");
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -109,7 +139,8 @@ const AdminUsers = () => {
   };
 
   const handleEdit = (user: IUser) => {
-    if (!hasPermission("users_edit")) return toast.error("🚫 ليس لديك صلاحية التعديل!");
+    if (!hasPermission("users_edit"))
+      return toast.error("🚫 ليس لديك صلاحية التعديل!");
     setEditingUser(user);
     setFormData({
       name: user.name,
@@ -124,10 +155,12 @@ const AdminUsers = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
-      if (!hasPermission("users_edit")) return toast.error("🚫 ليس لديك صلاحية التعديل!");
+      if (!hasPermission("users_edit"))
+        return toast.error("🚫 ليس لديك صلاحية التعديل!");
       updateMutation.mutate({ id: editingUser.id, data: formData });
     } else {
-      if (!hasPermission("users_create")) return toast.error("🚫 ليس لديك صلاحية الإضافة!");
+      if (!hasPermission("users_create"))
+        return toast.error("🚫 ليس لديك صلاحية الإضافة!");
       createMutation.mutate(formData);
     }
     setIsDialogOpen(false);
@@ -135,7 +168,8 @@ const AdminUsers = () => {
   };
 
   const handleDelete = (id: number) => {
-    if (!hasPermission("users_delete")) return toast.error("🚫 ليس لديك صلاحية الحذف!");
+    if (!hasPermission("users_delete"))
+      return toast.error("🚫 ليس لديك صلاحية الحذف!");
     if (!confirm("هل أنت متأكد من حذف هذا المستخدم؟")) return;
     deleteMutation.mutate(id);
   };
@@ -181,7 +215,9 @@ const AdminUsers = () => {
 
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>{editingUser ? "تعديل المستخدم" : "إضافة مستخدم"}</DialogTitle>
+                  <DialogTitle>
+                    {editingUser ? "تعديل المستخدم" : "إضافة مستخدم"}
+                  </DialogTitle>
                   <DialogDescription>
                     {editingUser
                       ? "قم بتعديل بيانات المستخدم ثم اضغط تحديث"
@@ -195,7 +231,9 @@ const AdminUsers = () => {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -206,7 +244,9 @@ const AdminUsers = () => {
                       type="email"
                       id="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -217,7 +257,9 @@ const AdminUsers = () => {
                       type="text"
                       id="phone"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                     />
                   </div>
 
@@ -227,7 +269,9 @@ const AdminUsers = () => {
                       type="password"
                       id="password"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
                       placeholder={editingUser ? "اتركها فارغة للإبقاء عليها" : ""}
                     />
                   </div>
@@ -236,7 +280,9 @@ const AdminUsers = () => {
                     <Label htmlFor="role">الدور</Label>
                     <Select
                       value={formData.role}
-                      onValueChange={(value) => setFormData({ ...formData, role: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, role: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الدور" />
@@ -252,10 +298,16 @@ const AdminUsers = () => {
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
                       إلغاء
                     </Button>
-                    <Button type="submit">{editingUser ? "تحديث" : "حفظ"}</Button>
+                    <Button type="submit">
+                      {editingUser ? "تحديث" : "حفظ"}
+                    </Button>
                   </div>
                 </form>
               </DialogContent>
@@ -272,50 +324,86 @@ const AdminUsers = () => {
             {loadingUsers ? (
               <p>جارٍ التحميل...</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead>البريد الإلكتروني</TableHead>
-                    <TableHead>الهاتف</TableHead>
-                    <TableHead>الدور</TableHead>
-                    <TableHead>العمليات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.phone || "-"}</TableCell>
-                      <TableCell>
-                        {user.roles?.map((r) => (
-                          <Badge key={r}>{r}</Badge>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          {hasPermission("users_edit") && (
-                            <Button size="sm" variant="ghost" onClick={() => handleEdit(user)}>
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {hasPermission("users_delete") && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive"
-                              onClick={() => handleDelete(user.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+              <div dir="rtl" className="overflow-x-auto">
+                <Table className="min-w-full border-collapse text-center">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-center w-[200px]">
+                        الاسم
+                      </TableHead>
+                      <TableHead className="text-center w-[250px]">
+                        البريد الإلكتروني
+                      </TableHead>
+                      <TableHead className="text-center w-[150px]">
+                        الهاتف
+                      </TableHead>
+                      <TableHead className="text-center w-[150px]">
+                        الدور
+                      </TableHead>
+                      <TableHead className="text-center w-[150px]">
+                        العمليات
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow
+                        key={user.id}
+                        className="h-20 hover:bg-accent/5"
+                      >
+                        <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[200px]">
+                          {user.name}
+                        </TableCell>
+                        <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[250px]">
+                          {user.email}
+                        </TableCell>
+                        <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[150px]">
+                          {user.phone || "-"}
+                        </TableCell>
+                        <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[150px]">
+                          {user.roles?.map((r) => (
+                            <Badge key={r}>{r}</Badge>
+                          ))}
+                        </TableCell>
+                        <TableCell className="align-middle">
+                          <div className="flex gap-2 justify-center">
+                            {hasPermission("users_edit") && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(user)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {hasPermission("users_delete") && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDelete(user.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+
+                    {users.length === 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="py-6 text-center text-gray-500"
+                        >
+                          لا توجد مستخدمين حالياً
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

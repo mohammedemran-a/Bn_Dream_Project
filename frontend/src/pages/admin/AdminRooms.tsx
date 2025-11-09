@@ -215,15 +215,15 @@ const AdminRooms = () => {
     const filtered = rooms.filter((r) => r.category === category);
     return (
       <div dir="rtl" className="overflow-x-auto">
-        <Table className="text-right w-full">
+        <Table className="min-w-full border-collapse text-center">
           <TableHeader>
             <TableRow>
-              <TableHead>الصورة</TableHead>
-              <TableHead>الاسم</TableHead>
-              <TableHead>السعر</TableHead>
-              <TableHead>السعة</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>العمليات</TableHead>
+               <TableHead className="text-center w-[150px]">الصورة</TableHead>
+            <TableHead className="text-center w-[200px]">الاسم</TableHead>
+            <TableHead className="text-center w-[150px]">السعر</TableHead>
+            <TableHead className="text-center w-[100px]">السعة</TableHead>
+            <TableHead className="text-center w-[120px]">الحالة</TableHead>
+            <TableHead className="text-center w-[150px]">العمليات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

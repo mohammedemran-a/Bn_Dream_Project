@@ -43,23 +43,19 @@ const AdminRoles = () => {
   const { toast } = useToast();
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
-  // جلب الأدوار
   const { data: roles = [], isLoading: loadingRoles } = useQuery<Role[], Error>({
     queryKey: ["roles"],
     queryFn: getRoles,
   });
 
-  // جلب الصلاحيات
   const { data: availablePermissions = [], isLoading: loadingPermissions } = useQuery<PermissionItem[], Error>({
     queryKey: ["permissions"],
     queryFn: async () => {
       const res = await getPermissions();
-      // التأكد أن كل صلاحية بصيغة PermissionItem
       return res.map((p) => (typeof p === "string" ? { id: p, label: p } : p));
     },
   });
 
-  // إنشاء دور
   const createRoleMutation = useMutation({
     mutationFn: (data: { name: string; permissions: string[] }) => createRole(data),
     onSuccess: () => {
@@ -69,7 +65,6 @@ const AdminRoles = () => {
     onError: (error: unknown) => handleApiError(error, toast),
   });
 
-  // تعديل دور
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: { name: string; permissions: string[] } }) =>
       updateRole(id, data),
@@ -80,7 +75,6 @@ const AdminRoles = () => {
     onError: (error: unknown) => handleApiError(error, toast),
   });
 
-  // حذف دور
   const deleteRoleMutation = useMutation({
     mutationFn: (id: number) => deleteRole(id),
     onSuccess: () => {
@@ -90,7 +84,6 @@ const AdminRoles = () => {
     onError: (error: unknown) => handleApiError(error, toast),
   });
 
-  // حالة الفورم
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [roleName, setRoleName] = useState("");
@@ -98,7 +91,6 @@ const AdminRoles = () => {
 
   const handleOpenDialog = (role?: Role) => {
     if (!hasPermission(role ? "roles_edit" : "roles_create")) return;
-
     if (role) {
       setEditingRole(role);
       setRoleName(role.name);
@@ -240,60 +232,75 @@ const AdminRoles = () => {
           )}
         </div>
 
+        {/* ✅ جدول الأدوار بعد التنسيق */}
         <Card>
           <CardHeader>
             <CardTitle>قائمة الأدوار</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>اسم الدور</TableHead>
-                  <TableHead>عدد الصلاحيات</TableHead>
-                  <TableHead>عدد المستخدمين</TableHead>
-                  <TableHead>تاريخ الإنشاء</TableHead>
-                  <TableHead className="text-right">العمليات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roles.map((role) => (
-                  <TableRow key={role.id} className="hover:bg-accent/5">
-                    <TableCell className="font-medium">{role.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{role.permissions.length} صلاحية</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{role.usersCount || 0} مستخدم</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{role.createdAt}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        {hasPermission("roles_edit") && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-primary/10"
-                            onClick={() => handleOpenDialog(role)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {hasPermission("roles_delete") && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => handleDeleteRole(role.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+            <div dir="rtl" className="overflow-x-auto">
+              <Table className="min-w-full border-collapse text-center">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center w-[200px]">اسم الدور</TableHead>
+                    <TableHead className="text-center w-[200px]">عدد الصلاحيات</TableHead>
+                    <TableHead className="text-center w-[200px]">عدد المستخدمين</TableHead>
+                    <TableHead className="text-center w-[200px]">تاريخ الإنشاء</TableHead>
+                    <TableHead className="text-center w-[150px]">العمليات</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+
+                <TableBody>
+                  {roles.map((role) => (
+                    <TableRow key={role.id} className="h-20 hover:bg-accent/5">
+                      <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[200px]">
+                        {role.name}
+                      </TableCell>
+                      <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[200px]">
+                        <Badge variant="secondary">{role.permissions.length} صلاحية</Badge>
+                      </TableCell>
+                      <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[200px]">
+                        <Badge variant="outline">{role.usersCount || 0} مستخدم</Badge>
+                      </TableCell>
+                      <TableCell className="align-middle whitespace-pre-wrap break-words max-w-[200px] text-muted-foreground">
+                        {role.createdAt}
+                      </TableCell>
+                      <TableCell className="align-middle">
+                        <div className="flex gap-2 justify-center">
+                          {hasPermission("roles_edit") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenDialog(role)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {hasPermission("roles_delete") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteRole(role.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {roles.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-6 text-center text-gray-500">
+                        لا توجد أدوار حالياً
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
