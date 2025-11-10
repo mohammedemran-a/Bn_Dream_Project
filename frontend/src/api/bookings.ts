@@ -13,7 +13,10 @@ export interface Booking {
   total_price: number;
   status: string;
   duration_type?: "hours" | "days";  // ✅ مهم
-  duration_value?: number;           // ✅ مهم
+  duration_value?: number;   
+  payment_method?: "cash" | "wallet";
+  wallet_type?: "جوالي" | "جيب" | "ون كاش";
+  wallet_code?: string;
 
 }
 

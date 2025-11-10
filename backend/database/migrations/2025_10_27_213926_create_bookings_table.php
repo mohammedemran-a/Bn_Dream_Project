@@ -23,6 +23,11 @@ return new class extends Migration
             $table->enum('duration_type', ['hours', 'days']);
             $table->integer('duration_value');
 
+            $table->enum('payment_method', ['cash', 'wallet'])->default('cash');
+            $table->string('wallet_code')->nullable();
+            $table->enum('wallet_type', ['جوالي', 'جيب', 'ون كاش'])->nullable();
+
+
             $table->timestamps();
         });
     }

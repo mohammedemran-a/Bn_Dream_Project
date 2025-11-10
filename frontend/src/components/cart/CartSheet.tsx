@@ -16,15 +16,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { createOrder } from "@/api/orders.ts";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/useAuthStore"; // ✅ تم الاستدعاء من هنا
 
 export const CartSheet = () => {
   const { items, totalItems, totalPrice, removeItem, updateQuantity, clearCart } = useCart();
+  const { user } = useAuthStore(); // ✅ أخذ بيانات المستخدم من Zustand
 
   // 🟢 دالة إنشاء الطلب
   const handleCreateOrder = async () => {
-    const userId = localStorage.getItem("user_id");
-    if (!userId) return toast.error("يرجى تسجيل الدخول أولاً.");
-    if (items.length === 0) return toast.error("السلة فارغة!");
+    if (!user) {
+      toast.error("يرجى تسجيل الدخول أولاً.");
+      return;
+    }
+
+    if (items.length === 0) {
+      toast.error("السلة فارغة!");
+      return;
+    }
 
     const productsData = items.map((p) => ({
       id: p.id,
@@ -33,7 +41,7 @@ export const CartSheet = () => {
 
     try {
       const response = await createOrder({
-        user_id: Number(userId),
+        user_id: user.id, // ✅ أخذ id المستخدم من Zustand
         products: productsData,
         total: totalPrice,
       });

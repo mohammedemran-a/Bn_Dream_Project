@@ -31,6 +31,7 @@ class BookingController extends Controller
      * 🟡 store:
      * إنشاء حجز جديد.
      * عند الإنشاء، يتم تغيير حالة الغرفة إلى "محجوز".
+     * تمت إضافة دعم لطريقة الدفع (نقداً / محفظة).
      */
     public function store(Request $request)
     {
@@ -44,12 +45,41 @@ class BookingController extends Controller
             'status' => 'nullable|string', // يمكن أن يكون "قيد المراجعة" أو "مؤكد"
             'duration_type' => 'required|in:hours,days',
             'duration_value' => 'required|integer|min:1',
+
+            // 🆕 الحقول الجديدة الخاصة بالدفع
+            'payment_method' => 'required|in:cash,wallet',
+            'wallet_type' => 'nullable|in:جوالي,جيب,ون كاش',
+            'wallet_code' => 'nullable|string|max:255',
         ]);
 
-        // إنشاء الحجز
-        $booking = Booking::create($validated);
+        // ✅ التحقق من متطلبات الدفع بالمحفظة
+        if ($validated['payment_method'] === 'wallet') {
+            if (empty($validated['wallet_type']) || empty($validated['wallet_code'])) {
+                return response()->json([
+                    'message' => 'يجب إدخال نوع المحفظة وكودها عند اختيار الدفع بالمحفظة.'
+                ], 422);
+            }
+        }
 
-        // تحديث حالة الغرفة إلى محجوزة
+        // ✅ إنشاء الحجز
+        $booking = Booking::create([
+            'user_id' => $validated['user_id'],
+            'room_id' => $validated['room_id'],
+            'check_in' => $validated['check_in'],
+            'check_out' => $validated['check_out'],
+            'guests' => $validated['guests'],
+            'total_price' => $validated['total_price'],
+            'status' => $validated['status'] ?? 'قيد المراجعة',
+            'duration_type' => $validated['duration_type'],
+            'duration_value' => $validated['duration_value'],
+
+            // 🆕 تخزين بيانات الدفع
+            'payment_method' => $validated['payment_method'],
+            'wallet_type' => $validated['wallet_type'] ?? null,
+            'wallet_code' => $validated['wallet_code'] ?? null,
+        ]);
+
+        // 🔁 تحديث حالة الغرفة إلى "محجوزة"
         $room = Room::findOrFail($validated['room_id']);
         $room->status = 'محجوز';
         $room->save();

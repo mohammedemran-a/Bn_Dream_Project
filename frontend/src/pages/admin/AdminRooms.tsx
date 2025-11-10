@@ -185,7 +185,7 @@ const AdminRooms = () => {
     const filtered = rooms.filter((r) => r.category === category);
     return (
       <div dir="rtl" className="overflow-x-auto">
-        <Table className="text-right w-full">
+        <Table className="min-w-full border-collapse text-center">
           <TableHeader>
             <TableRow>
               <TableHead className="text-center w-[150px]">الصورة</TableHead>

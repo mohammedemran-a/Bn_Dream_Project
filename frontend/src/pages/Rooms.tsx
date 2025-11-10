@@ -41,7 +41,15 @@ const RoomCard = ({ room }: { room: Room }) => {
   const [durationType, setDurationType] = useState<"hours" | "days">("days");
   const [durationValue, setDurationValue] = useState<number>(1);
 
-  const totalPrice = room.price * durationValue;
+  // حالات الدفع
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "wallet">("cash");
+  const [walletType, setWalletType] = useState<"جوالي" | "جيب" | "ون كاش" | null>(null);
+  const [walletCode, setWalletCode] = useState("");
+
+  const totalPrice = durationType === "hours"
+  ? room.price * (durationValue / 24) // تحويل السعر من يوم إلى ساعة
+  : room.price * durationValue;
+
 
   const formatDate = (date: Date) =>
     date.toISOString().slice(0, 19).replace("T", " ");
@@ -69,14 +77,24 @@ const RoomCard = ({ room }: { room: Room }) => {
         status: "قيد المراجعة",
         duration_type: durationType,
         duration_value: durationValue,
+        payment_method: paymentMethod,
+        wallet_type: paymentMethod === "wallet" ? walletType : null,
+        wallet_code: paymentMethod === "wallet" ? walletCode : null,
       };
+
+      if (paymentMethod === "wallet") {
+        if (!walletType || !walletCode.trim()) {
+          toast.error("⚠️ يرجى اختيار نوع المحفظة وإدخال الكود.");
+          throw new Error("Wallet details missing");
+        }
+      }
 
       return await createBooking(bookingData);
     },
     onSuccess: () => {
       toast.success("✅ تم إنشاء الحجز بنجاح!");
       setShowModal(false);
-      queryClient.invalidateQueries({ queryKey: ["rooms"] }); // تحديث الغرف
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     },
     onError: () => toast.error("⚠️ حدث خطأ أثناء تنفيذ الحجز."),
   });
@@ -207,6 +225,62 @@ const RoomCard = ({ room }: { room: Room }) => {
                   </Select>
                 </div>
               </div>
+
+              {/* 🆕 سعر الحجز المباشر */}
+              <div>
+                <Label>السعر الإجمالي</Label>
+                <p className="text-lg font-bold">{totalPrice} ريال</p>
+              </div>
+
+              {/* اختيار طريقة الدفع */}
+              <div>
+                <Label>طريقة الدفع</Label>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(val: "cash" | "wallet") => setPaymentMethod(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر طريقة الدفع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">نقدًا عند الوصول</SelectItem>
+                    <SelectItem value="wallet">عبر المحفظة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {paymentMethod === "wallet" && (
+                <>
+                  <div>
+                    <Label>نوع المحفظة</Label>
+                    <Select
+                      value={walletType || ""}
+                      onValueChange={(val: "جوالي" | "جيب" | "ون كاش") =>
+                        setWalletType(val)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر نوع المحفظة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="جوالي">جوالي</SelectItem>
+                        <SelectItem value="جيب">جيب</SelectItem>
+                        <SelectItem value="ون كاش">ون كاش</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>كود المحفظة</Label>
+                    <Input
+                      type="text"
+                      value={walletCode}
+                      onChange={(e) => setWalletCode(e.target.value)}
+                      placeholder="أدخل كود المحفظة هنا"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
@@ -227,6 +301,7 @@ const RoomCard = ({ room }: { room: Room }) => {
   );
 };
 
+// باقي الصفحة بدون أي تعديل 👇
 const CategorySection = ({ title, rooms }: { title: string; rooms: Room[] }) => (
   <>
     <div className="mb-6 p-6 bg-card rounded-lg border">

@@ -89,7 +89,7 @@ const AdminBookings = () => {
                 <Table className="table-fixed w-full border-collapse text-center">
                   <TableHeader>
                     <TableRow>
-                     <TableHead className="w-[120px] text-center">المستخدم</TableHead>
+                      <TableHead className="w-[120px] text-center">المستخدم</TableHead>
                       <TableHead className="w-[200px] text-center">الغرفة</TableHead>
                       <TableHead className="w-[180px] text-center">الوصول</TableHead>
                       <TableHead className="w-[180px] text-center">المغادرة</TableHead>
@@ -97,6 +97,12 @@ const AdminBookings = () => {
                       <TableHead className="w-[100px] text-center">الضيوف</TableHead>
                       <TableHead className="w-[100px] text-center">المبلغ</TableHead>
                       <TableHead className="w-[100px] text-center">الحالة</TableHead>
+
+                      {/* 🆕 أعمدة الدفع الجديدة */}
+                      <TableHead className="w-[120px] text-center">طريقة الدفع</TableHead>
+                      <TableHead className="w-[120px] text-center">نوع المحفظة</TableHead>
+                      <TableHead className="w-[150px] text-center">كود المحفظة</TableHead>
+
                       <TableHead className="w-[220px] text-center">العمليات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -109,7 +115,7 @@ const AdminBookings = () => {
                           <TableCell>{booking.check_in}</TableCell>
                           <TableCell>{booking.check_out}</TableCell>
                           <TableCell>
-                            {booking.duration_value} 
+                            {booking.duration_value}
                             {booking.duration_type === "hours" ? " ساعة" : " يوم"}
                           </TableCell>
                           <TableCell>{booking.guests}</TableCell>
@@ -119,6 +125,18 @@ const AdminBookings = () => {
                               {booking.status}
                             </Badge>
                           </TableCell>
+
+                          {/* 🆕 عرض بيانات الدفع */}
+                          <TableCell>
+                            {booking.payment_method === "wallet" ? "محفظة" : "نقداً"}
+                          </TableCell>
+                          <TableCell>
+                            {booking.wallet_type ?? "-"}
+                          </TableCell>
+                          <TableCell>
+                            {booking.wallet_code ?? "-"}
+                          </TableCell>
+
                           <TableCell className="text-right flex gap-2 justify-end">
                             {hasPermission("bookings_edit") && booking.status === "قيد المراجعة" && (
                               <>
@@ -162,7 +180,7 @@ const AdminBookings = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-6">
+                        <TableCell colSpan={12} className="text-center py-6">
                           لا توجد حجوزات لعرضها
                         </TableCell>
                       </TableRow>
