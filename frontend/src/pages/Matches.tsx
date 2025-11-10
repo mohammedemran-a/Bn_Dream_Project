@@ -56,16 +56,14 @@ const Matches = () => {
     },
   });
 
-  // 🟢 جلب توقعات المستخدم
-  const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<Prediction[]>({
-    queryKey: ["userPredictions", userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const res = await getUserPredictions(userId);
-      return res.data;
-    },
-    enabled: !!userId,
-  });
+const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<Prediction[]>({
+  queryKey: ["userPredictions", userId],
+  queryFn: () => {
+    if (!userId) return Promise.resolve([]); // ضمان مصفوفة فارغة إذا لم يوجد userId
+    return getUserPredictions(userId); // getUserPredictions ترجع مصفوفة جاهزة
+  },
+  enabled: !!userId,
+});
 
  const { data: leaderboard = [], isLoading: loadingLeaderboard } = useQuery<LeaderboardItem[]>({
   queryKey: ["leaderboard"],

@@ -11,7 +11,6 @@ export interface Order {
   user: { name: string; phone?: string } | null;
   total: number;
   status: string;
-  created_at: string;
   products: OrderProduct[];
 }
 

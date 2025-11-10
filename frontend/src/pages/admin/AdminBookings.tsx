@@ -64,7 +64,6 @@ const AdminBookings = () => {
         </div>
 
         <Card>
-          {/* ✅ تعديل هذا الجزء فقط لمحاذاة العنوان والقائمة */}
           <CardHeader>
             <div dir="rtl" className="flex justify-between items-center">
               <CardTitle>قائمة الحجوزات</CardTitle>
@@ -86,89 +85,91 @@ const AdminBookings = () => {
             {isLoading ? (
               <p className="text-center py-6">جاري تحميل الحجوزات...</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المستخدم</TableHead>
-                    <TableHead>الغرفة</TableHead>
-                    <TableHead>الوصول</TableHead>
-                    <TableHead>المغادرة</TableHead>
-                    <TableHead>المدة</TableHead>
-                    <TableHead>الضيوف</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead className="text-right">العمليات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.length > 0 ? (
-                    bookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>{booking.user?.name || `#${booking.user_id}`}</TableCell>
-                        <TableCell>{booking.room?.name || `#${booking.room_id}`}</TableCell>
-                        <TableCell>{booking.check_in}</TableCell>
-                        <TableCell>{booking.check_out}</TableCell>
-                        <TableCell>
-                          {booking.duration_value} 
-                          {booking.duration_type === "hours" ? " ساعة" : " يوم"}
-                        </TableCell>
-                        <TableCell>{booking.guests}</TableCell>
-                        <TableCell>{booking.total_price} ريال</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusVariant(booking.status)}>
-                            {booking.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right flex gap-2 justify-end">
-                          {hasPermission("bookings_edit") && booking.status === "قيد المراجعة" && (
-                            <>
+              <div className="overflow-x-auto">
+                <Table className="table-fixed w-full border-collapse text-center">
+                  <TableHeader>
+                    <TableRow>
+                     <TableHead className="w-[120px] text-center">المستخدم</TableHead>
+                      <TableHead className="w-[200px] text-center">الغرفة</TableHead>
+                      <TableHead className="w-[180px] text-center">الوصول</TableHead>
+                      <TableHead className="w-[180px] text-center">المغادرة</TableHead>
+                      <TableHead className="w-[100px] text-center">المدة</TableHead>
+                      <TableHead className="w-[100px] text-center">الضيوف</TableHead>
+                      <TableHead className="w-[100px] text-center">المبلغ</TableHead>
+                      <TableHead className="w-[100px] text-center">الحالة</TableHead>
+                      <TableHead className="w-[220px] text-center">العمليات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bookings.length > 0 ? (
+                      bookings.map((booking) => (
+                        <TableRow key={booking.id}>
+                          <TableCell>{booking.user?.name || `#${booking.user_id}`}</TableCell>
+                          <TableCell>{booking.room?.name || `#${booking.room_id}`}</TableCell>
+                          <TableCell>{booking.check_in}</TableCell>
+                          <TableCell>{booking.check_out}</TableCell>
+                          <TableCell>
+                            {booking.duration_value} 
+                            {booking.duration_type === "hours" ? " ساعة" : " يوم"}
+                          </TableCell>
+                          <TableCell>{booking.guests}</TableCell>
+                          <TableCell>{booking.total_price} ريال</TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusVariant(booking.status)}>
+                              {booking.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right flex gap-2 justify-end">
+                            {hasPermission("bookings_edit") && booking.status === "قيد المراجعة" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600"
+                                  onClick={() =>
+                                    updateStatusMutation.mutate({ id: booking.id, status: "مؤكد" })
+                                  }
+                                >
+                                  تأكيد
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600"
+                                  onClick={() =>
+                                    updateStatusMutation.mutate({ id: booking.id, status: "ملغي" })
+                                  }
+                                >
+                                  إلغاء
+                                </Button>
+                              </>
+                            )}
+                            {hasPermission("bookings_delete") && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="text-green-600"
-                                onClick={() =>
-                                  updateStatusMutation.mutate({ id: booking.id, status: "مؤكد" })
-                                }
+                                variant="ghost"
+                                className="text-destructive"
+                                onClick={() => {
+                                  if (confirm("هل أنت متأكد من حذف هذا الحجز؟"))
+                                    deleteMutation.mutate(booking.id);
+                                }}
                               >
-                                تأكيد
+                                حذف
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600"
-                                onClick={() =>
-                                  updateStatusMutation.mutate({ id: booking.id, status: "ملغي" })
-                                }
-                              >
-                                إلغاء
-                              </Button>
-                            </>
-                          )}
-                          {hasPermission("bookings_delete") && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive"
-                              onClick={() => {
-                                if (confirm("هل أنت متأكد من حذف هذا الحجز؟"))
-                                  deleteMutation.mutate(booking.id);
-                              }}
-                            >
-                              حذف
-                            </Button>
-                          )}
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-6">
+                          لا توجد حجوزات لعرضها
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-6">
-                        لا توجد حجوزات لعرضها
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

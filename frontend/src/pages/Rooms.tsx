@@ -19,7 +19,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Users, Wifi, Coffee, Tv, Clock } from "lucide-react";
+import { Users, Wifi, Coffee, Tv } from "lucide-react";
 import { getRooms, Room } from "@/api/rooms";
 import { createBooking } from "@/api/bookings.ts";
 import { toast } from "sonner";
@@ -32,15 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const RoomCard = ({ room }: { room: Room }) => {
   const queryClient = useQueryClient();
-  const [roomStatus, setRoomStatus] = useState(room.status);
+  const { user } = useAuthStore();
   const [showModal, setShowModal] = useState(false);
   const [durationType, setDurationType] = useState<"hours" | "days">("days");
   const [durationValue, setDurationValue] = useState<number>(1);
 
-  // السعر بناءً على المدة فقط
   const totalPrice = room.price * durationValue;
 
   const formatDate = (date: Date) =>
@@ -48,6 +48,11 @@ const RoomCard = ({ room }: { room: Room }) => {
 
   const bookingMutation = useMutation({
     mutationFn: async () => {
+      if (!user?.id) {
+        toast.error("⚠️ يجب تسجيل الدخول أولاً");
+        throw new Error("User not logged in");
+      }
+
       const now = new Date();
       const checkOut = new Date(now);
 
@@ -55,12 +60,12 @@ const RoomCard = ({ room }: { room: Room }) => {
       else checkOut.setDate(now.getDate() + durationValue);
 
       const bookingData = {
-        user_id: 1, // استبدل بالـ user_id الحقيقي
+        user_id: user.id,
         room_id: room.id,
         check_in: formatDate(now),
         check_out: formatDate(checkOut),
         guests: room.capacity,
-        total_price: totalPrice, // يعتمد على المدة فقط
+        total_price: totalPrice,
         status: "قيد المراجعة",
         duration_type: durationType,
         duration_value: durationValue,
@@ -70,15 +75,14 @@ const RoomCard = ({ room }: { room: Room }) => {
     },
     onSuccess: () => {
       toast.success("✅ تم إنشاء الحجز بنجاح!");
-      setRoomStatus("محجوز");
       setShowModal(false);
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] }); // تحديث الغرف
     },
     onError: () => toast.error("⚠️ حدث خطأ أثناء تنفيذ الحجز."),
   });
 
   const handleOpenModal = () => {
-    if (roomStatus === "محجوز") {
+    if (room.status === "محجوز") {
       toast.error("❌ هذه الغرفة محجوزة بالفعل.");
       return;
     }
@@ -108,10 +112,10 @@ const RoomCard = ({ room }: { room: Room }) => {
           />
           <Badge
             className={`absolute top-4 right-4 ${
-              roomStatus === "متاح" ? "bg-green-500" : "bg-red-500"
+              room.status === "متاح" ? "bg-green-500" : "bg-red-500"
             }`}
           >
-            {roomStatus}
+            {room.status}
           </Badge>
         </div>
 
@@ -159,14 +163,14 @@ const RoomCard = ({ room }: { room: Room }) => {
         <CardFooter>
           <Button
             className={`w-full shadow-elegant ${
-              roomStatus === "محجوز"
+              room.status === "محجوز"
                 ? "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                 : ""
             }`}
             onClick={handleOpenModal}
-            disabled={roomStatus === "محجوز" || bookingMutation.isPending}
+            disabled={room.status === "محجوز" || bookingMutation.isPending}
           >
-            {roomStatus === "محجوز"
+            {room.status === "محجوز"
               ? "محجوزة"
               : bookingMutation.isPending
               ? "جاري الحجز..."
@@ -175,12 +179,10 @@ const RoomCard = ({ room }: { room: Room }) => {
         </CardFooter>
       </Card>
 
-      {/* مودال الحجز */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md relative">
             <h4 className="text-lg font-bold mb-4">تأكيد الحجز: {room.name}</h4>
-
             <div className="space-y-4">
               <div>
                 <Label>المدة</Label>

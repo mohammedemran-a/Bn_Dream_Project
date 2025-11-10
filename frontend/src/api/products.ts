@@ -9,6 +9,7 @@ export interface Product {
   type: string;
   image?: string | null;
   description?: string;
+  userId?: number;
 }
 
 const API_URL = "/api/products";

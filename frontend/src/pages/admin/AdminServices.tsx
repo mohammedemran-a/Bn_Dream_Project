@@ -62,7 +62,7 @@ const AdminServices = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] }); // إعادة جلب البيانات بعد الحفظ
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       setIsDialogOpen(false);
       setEditingProduct(null);
       resetForm();
@@ -116,14 +116,25 @@ const AdminServices = () => {
     }
   };
 
+  // -------------------------
+  // جدول المنتجات
+  // -------------------------
   const ProductsTable = ({ type }: { type: string }) => {
     const filtered = Array.isArray(products) ? products.filter((p) => p.type === type) : [];
+
     return (
       <div dir="rtl" className="overflow-x-auto">
+        {/* مؤشر تحديث أثناء أي Fetch لاحق */}
+        {isFetching && !isLoading && (
+          <p className="text-right text-gray-400 text-sm mb-2 animate-pulse">
+            جارٍ تحديث البيانات...
+          </p>
+        )}
+
         <Table className="min-w-full border-collapse text-center">
           <TableHeader>
             <TableRow>
-               <TableHead className="text-center w-[150px]">الصورة</TableHead>
+              <TableHead className="text-center w-[150px]">الصورة</TableHead>
               <TableHead className="text-center w-[250px]">الاسم</TableHead>
               <TableHead className="text-center w-[150px]">السعر</TableHead>
               <TableHead className="text-center w-[120px]">الكمية</TableHead>
@@ -180,6 +191,9 @@ const AdminServices = () => {
     );
   };
 
+  // -------------------------
+  // صلاحية عرض الصفحة
+  // -------------------------
   if (!hasPermission("services_view")) {
     return (
       <AdminLayout>
@@ -190,7 +204,10 @@ const AdminServices = () => {
     );
   }
 
-  if (isLoading || isFetching) {
+  // -------------------------
+  // Loading أول مرة فقط
+  // -------------------------
+  if (isLoading) {
     return (
       <AdminLayout>
         <p className="text-center text-gray-500 mt-10">جارٍ تحميل المنتجات...</p>
@@ -198,9 +215,13 @@ const AdminServices = () => {
     );
   }
 
+  // -------------------------
+  // الواجهة الرئيسية
+  // -------------------------
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* عنوان + زر إضافة */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة المنتجات</h1>
 
@@ -220,6 +241,7 @@ const AdminServices = () => {
                   </Button>
                 )}
               </DialogTrigger>
+
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>{editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}</DialogTitle>
@@ -297,6 +319,7 @@ const AdminServices = () => {
           )}
         </div>
 
+        {/* التبويبات */}
         <div dir="rtl">
           <Tabs defaultValue="البقالة">
             <TabsList className="grid grid-cols-5">

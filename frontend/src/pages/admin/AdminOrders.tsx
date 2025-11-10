@@ -22,7 +22,6 @@ interface Order {
   user: { name: string; phone?: string } | null;
   total: number;
   status: string;
-  created_at: string;
   products: {
     id: number;
     name: string;
@@ -167,7 +166,6 @@ const AdminOrders = () => {
                       <TableHead className="w-[120px] text-center">المستخدم</TableHead>
                       <TableHead className="w-[130px] text-center">رقم الهاتف</TableHead>
                       <TableHead className="w-[250px] text-center">المنتجات</TableHead>
-                      <TableHead className="w-[180px] text-center">التاريخ</TableHead>
                       <TableHead className="w-[100px] text-center">المبلغ</TableHead>
                       <TableHead className="w-[100px] text-center">الحالة</TableHead>
                       <TableHead className="w-[150px] text-center">العمليات</TableHead>
@@ -189,9 +187,6 @@ const AdminOrders = () => {
                                 .map((p) => `${p.name} × ${p.pivot.quantity}`)
                                 .join("، ")
                             : "—"}
-                        </TableCell>
-                        <TableCell className="text-sm text-center">
-                          {new Date(order.created_at).toLocaleString("ar-SA")}
                         </TableCell>
                         <TableCell className="font-medium text-center">
                           {order.total} ر.س

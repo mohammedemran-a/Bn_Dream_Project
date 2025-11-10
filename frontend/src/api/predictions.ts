@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api/predictions.ts";
+const API_URL = "http://localhost:8000/api/predictions";
 
 export interface PredictionData {
   user_id: number;
@@ -26,11 +26,11 @@ export const postPrediction = async (data: PredictionData) => {
 // 🟢 جلب توقعات مستخدم واحد
 export const getUserPredictions = async (userId: number) => {
   const response = await axios.get(`${API_URL}/user/${userId}`);
-  return response.data;
+  return response.data ?? []; // ← هذا يمنع undefined
 };
 
 // 🟢 جلب قائمة المتصدرين
 export const getLeaderboard = async () => {
   const response = await axios.get(`${API_URL}/leaderboard`);
-  return response.data as LeaderboardItem[];
+  return response.data ?? []; // ← نفس الفكرة هنا
 };

@@ -9,6 +9,7 @@ import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import { getProducts, Product } from "@/api/products.ts";
+import { useAuthStore } from "@/store/useAuthStore"; // ✅ استيراد البيانات من Zustand
 
 // -------------------------
 // بطاقة الخدمة
@@ -18,7 +19,7 @@ const ServiceCard = ({
   addToCart,
 }: {
   item: Product;
-  addToCart: (product: Product, quantity: number) => void;
+  addToCart: (product: Product, quantity: number, userId: number) => void; // تعديل لتضمين userId
 }) => {
   const [quantity, setQuantity] = useState(1);
 
@@ -57,7 +58,10 @@ const ServiceCard = ({
         </div>
       </CardHeader>
       <CardFooter>
-        <Button onClick={() => addToCart(item, quantity)} className="w-full shadow-elegant">
+        <Button
+          onClick={() => addToCart(item, quantity, item.userId!)}
+          className="w-full shadow-elegant"
+        >
           أضف إلى السلة
         </Button>
       </CardFooter>
@@ -70,6 +74,7 @@ const ServiceCard = ({
 // -------------------------
 const Services = () => {
   const { addItem } = useCart();
+  const { user } = useAuthStore(); // ✅ الحصول على المستخدم
   const categories = ["بقالة", "قهوة", "قات", "شيشة", "كروت"];
 
   // ✅ استخدام React Query لجلب المنتجات
@@ -137,8 +142,9 @@ const Services = () => {
                               ...item,
                               price: Number(item.price),
                               image: item.image || "",
+                              userId: user?.id, // ✅ ربط id المستخدم
                             }}
-                            addToCart={(product, quantity) =>
+                            addToCart={(product, quantity, userId) =>
                               addItem(
                                 {
                                   id: product.id,
@@ -146,6 +152,7 @@ const Services = () => {
                                   price: Number(product.price),
                                   image: product.image || "",
                                   category: product.category,
+                                  userId: user?.id,// ✅ تمرير id المستخدم
                                 },
                                 quantity
                               )
