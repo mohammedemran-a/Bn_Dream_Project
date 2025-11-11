@@ -7,7 +7,6 @@ import Footer from "@/components/layout/Footer";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -48,11 +47,11 @@ const Matches = () => {
     queryFn: getMatches,
   });
 
-  // 🟢 جلب توقعات المستخدم
+  // 🟢 جلب توقعات المستخدم (لن تعمل حتى يتوفر userId)
   const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery({
     queryKey: ["userPredictions", userId],
-    queryFn: () => (userId ? getUserPredictions(userId) : []),
-    enabled: !!userId,
+    queryFn: () => getUserPredictions(userId!),
+    enabled: !!userId, // ✅ هنا نوقف التنفيذ مؤقتاً
   });
 
   // 🟢 جلب المتصدرين
@@ -61,7 +60,7 @@ const Matches = () => {
     queryFn: getLeaderboard,
   });
 
-  // 🟢 إرسال توقع جديد
+  // 🟢 إرسال التوقع
   const predictionMutation = useMutation({
     mutationFn: (data: { matchId: number; team1: number; team2: number }) =>
       postPrediction({
@@ -75,7 +74,7 @@ const Matches = () => {
     },
   });
 
-  // ⚙️ تغيير القيم في التوقع
+  // ⚙️ تغيير التوقع
   const handlePredictionChange = (
     matchId: number,
     team: "team1" | "team2",
@@ -124,8 +123,22 @@ const Matches = () => {
     });
   };
 
-  const loading = loadingMatches || loadingPredictions || loadingLeaderboard;
+  // ⚙️ حالة التحميل
+  const loading =
+    loadingMatches || loadingLeaderboard || (userId && loadingPredictions);
 
+  // 🟡 أثناء تحميل المستخدم من الستور
+  if (!userId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg text-muted-foreground animate-pulse">
+          جاري تحميل البيانات...
+        </p>
+      </div>
+    );
+  }
+
+  // 🟡 أثناء تحميل البيانات
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -136,6 +149,7 @@ const Matches = () => {
     );
   }
 
+  // ✅ عرض الصفحة بعد تحميل كل البيانات
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -165,7 +179,6 @@ const Matches = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {matches.map((match, index) => {
-                  // ✅ التعديل هنا فقط
                   const existingPrediction = userPredictions.find(
                     (p) => p.football_match_id === match.id
                   );
@@ -200,7 +213,7 @@ const Matches = () => {
                           {match.team2}
                         </CardTitle>
 
-                          <div className="text-center space-y-1 text-sm text-muted-foreground">
+                        <div className="text-center space-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center justify-center gap-2">
                             <Calendar className="h-4 w-4" />
                             <span>{match.date}</span>
