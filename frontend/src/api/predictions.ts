@@ -1,12 +1,32 @@
 import axios from "axios";
 
+// 🔹 عنوان الـ API
 const API_URL = "http://localhost:8000/api/predictions";
 
+// 🔹 أنواع البيانات
 export interface PredictionData {
   user_id: number;
-  match_id: number;
+  match_id: number; // ← هذا فقط لسهولة الاستخدام في الواجهة
   team1: number;
   team2: number;
+}
+
+export interface PredictionResponse {
+  id: number;
+  user_id: number;
+  football_match_id: number;
+  team1_score: number;
+  team2_score: number;
+  points: number | null;
+  created_at: string;
+  updated_at: string;
+  match?: {
+    id: number;
+    team1: string;
+    team2: string;
+    date: string;
+    time: string;
+  };
 }
 
 export interface LeaderboardItem {
@@ -17,20 +37,37 @@ export interface LeaderboardItem {
   };
 }
 
-// 🟢 إرسال توقع جديد
+/**
+ * 🟢 إرسال توقع جديد أو تحديث موجود
+ * يتوافق مع Laravel (PredictionController@store)
+ */
 export const postPrediction = async (data: PredictionData) => {
-  const response = await axios.post(API_URL, data);
-  return response.data;
+  const payload = {
+    user_id: data.user_id,
+    football_match_id: data.match_id, // ✅ مطابق للـ backend
+    team1_score: data.team1,          // ✅ مطابق
+    team2_score: data.team2,          // ✅ مطابق
+  };
+
+  const response = await axios.post(API_URL, payload);
+  return response.data as { message: string; data: PredictionResponse };
 };
 
-// 🟢 جلب توقعات مستخدم واحد
+/**
+ * 🟢 جلب جميع توقعات المستخدم
+ * GET /api/predictions/user/{userId}
+ */
 export const getUserPredictions = async (userId: number) => {
+  if (!userId) return []; // ✅ حماية إضافية
   const response = await axios.get(`${API_URL}/user/${userId}`);
-  return response.data ?? []; // ← هذا يمنع undefined
+  return Array.isArray(response.data) ? response.data : [];
 };
 
-// 🟢 جلب قائمة المتصدرين
+/**
+ * 🏆 جلب قائمة المتصدرين
+ * GET /api/predictions/leaderboard
+ */
 export const getLeaderboard = async () => {
   const response = await axios.get(`${API_URL}/leaderboard`);
-  return response.data ?? []; // ← نفس الفكرة هنا
+  return Array.isArray(response.data) ? response.data : [];
 };

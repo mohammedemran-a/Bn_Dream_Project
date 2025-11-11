@@ -3,35 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Trophy, Calendar, Clock } from "lucide-react";
-
-const todayMatches = [
-  {
-    id: 1,
-    team1: "ريال مدريد",
-    team2: "برشلونة",
-    time: "20:00",
-    channel: "beIN Sports",
-    status: "قريباً",
-  },
-  {
-    id: 2,
-    team1: "ليفربول",
-    team2: "مانشستر سيتي",
-    time: "22:00",
-    channel: "beIN Sports",
-    status: "قريباً",
-  },
-  {
-    id: 3,
-    team1: "بايرن ميونخ",
-    team2: "بوروسيا دورتموند",
-    time: "21:30",
-    channel: "beIN Sports",
-    status: "قريباً",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { getMatches, Match } from "@/api/football_matches";
 
 const MatchesWidget = () => {
+  // 🟢 جلب المباريات باستخدام React Query
+  const { data: todayMatches = [], isLoading, isError } = useQuery<Match[]>({
+    queryKey: ["matches"],
+    queryFn: getMatches,
+  });
+
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">
@@ -49,7 +30,9 @@ const MatchesWidget = () => {
 
         {/* Matches Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {todayMatches.map((match, index) => (
+          {isLoading && <p className="text-center col-span-3">جارٍ تحميل المباريات...</p>}
+          {isError && <p className="text-center col-span-3 text-red-500">حدث خطأ أثناء جلب المباريات.</p>}
+          {!isLoading && !isError && todayMatches.map((match, index) => (
             <Card
               key={match.id}
               className="hover-lift card-gradient border-2 animate-scale-in"

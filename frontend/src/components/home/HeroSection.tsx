@@ -5,54 +5,69 @@ import { CalendarCheck, Sparkles } from "lucide-react";
 const HeroSection = () => {
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-      {/* Background with Gradient Overlay */}
+      {/* خلفية مع تدرج لوني */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background to-background -z-10" />
-      
-      {/* Animated Background Shapes */}
+
+      {/* أشكال خلفية متحركة */}
       <div className="absolute top-20 right-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-20 left-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+      <div
+        className="absolute bottom-20 left-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float"
+        style={{ animationDelay: "1s" }}
+      />
 
       <div className="container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          {/* Badge */}
+          {/* الشارة العلوية */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 animate-bounce-in">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">أفضل استراحة في صنعاء</span>
           </div>
 
-          {/* Main Heading */}
+          {/* العنوان الرئيسي الجديد */}
           <h1 className="text-5xl md:text-7xl font-bold leading-tight animate-fade-in">
             <span className="bg-gradient-to-l from-primary via-accent to-primary bg-clip-text text-transparent">
-              مرحباً بك في
+              استراحة بي إن إيدريم
             </span>
             <br />
-            <span className="text-foreground"> استراحة BN-DREAM</span>
+            <span className="text-foreground text-2xl md:text-4xl">
+              حيث تبدأ لحظات الراحة والمتعة الحقيقية.
+            </span>
           </h1>
 
-          {/* Description */}
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            استمتع بأفضل تجربة للراحة والاستجمام مع خدماتنا المتميزة وغرفنا الفاخرة
+          {/* الوصف */}
+          <p
+            className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-fade-in"
+            style={{ animationDelay: "0.2s" }}
+          >
+            استمتع بأفضل تجربة للراحة والفخامة مع خدماتنا المتميزة وغرفنا العصرية المصممة لتوفر لك تجربة لا تنسى.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          {/* أزرار الدعوة إلى الإجراء */}
+          <div
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in"
+            style={{ animationDelay: "0.4s" }}
+          >
             <Link to="/rooms">
-              <Button size="lg" className="gap-2 shadow-elegant hover:shadow-glow transition-smooth text-lg px-8 py-6">
+              <Button
+                size="lg"
+                className="gap-2 shadow-elegant hover:shadow-glow transition-smooth text-lg px-8 py-6"
+              >
                 <CalendarCheck className="h-5 w-5" />
                 احجز الآن
               </Button>
             </Link>
             <Link to="/services">
-              <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6 hover-lift">
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2 text-lg px-8 py-6 hover-lift"
+              >
                 استكشف الخدمات
               </Button>
             </Link>
           </div>
-
         </div>
       </div>
-
-      
     </section>
   );
 };

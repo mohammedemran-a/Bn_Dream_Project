@@ -17,13 +17,13 @@ export interface Match {
 // 🟢 جلب كل المباريات
 export const getMatches = async () => {
   const response = await axios.get<Match[]>(API_URL);
-  return response;
+   return response.data;
 };
 
 // 🟢 جلب مباراة واحدة
 export const getMatch = async (id: number) => {
   const response = await axios.get<Match>(`${API_URL}/${id}`);
-  return response;
+  return response.data;
 };
 
 // 🟢 إنشاء مباراة جديدة

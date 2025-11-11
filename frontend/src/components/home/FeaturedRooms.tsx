@@ -1,43 +1,22 @@
+import { useQuery } from "@tanstack/react-query";
+import { getRooms, Room } from "@/api/rooms";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Users, Wifi, Coffee, Tv } from "lucide-react";
 
-const rooms = [
-  {
-    id: 1,
-    name: "الجناح الملكي",
-    description: "جناح فاخر بإطلالة رائعة ومرافق متكاملة",
-    price: 500,
-    capacity: 6,
-    image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&q=80",
-    features: ["واي فاي", "تلفاز", "مطبخ", "حمام خاص"],
-    status: "متاحة",
-  },
-  {
-    id: 2,
-    name: "غرفة العائلة",
-    description: "مثالية للعائلات مع مساحة واسعة ومريحة",
-    price: 350,
-    capacity: 4,
-    image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
-    features: ["واي فاي", "تلفاز", "مطبخ صغير"],
-    status: "متاحة",
-  },
-  {
-    id: 3,
-    name: "غرفة الأصدقاء",
-    description: "مثالية للقاءات والاجتماعات مع الأصدقاء",
-    price: 300,
-    capacity: 5,
-    image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80",
-    features: ["واي فاي", "تلفاز", "قهوة"],
-    status: "محجوزة",
-  },
-];
-
 const FeaturedRooms = () => {
+  // جلب الغرف من API
+  const { data: rooms, isLoading, isError } = useQuery<Room[]>({
+    queryKey: ["rooms"],
+    queryFn: getRooms,
+  });
+
+  // حالات التحميل والأخطاء
+  if (isLoading) return <p className="text-center py-20">جاري تحميل الغرف...</p>;
+  if (isError) return <p className="text-center text-red-500 py-20">حدث خطأ أثناء تحميل الغرف.</p>;
+
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">
@@ -52,7 +31,7 @@ const FeaturedRooms = () => {
 
         {/* Rooms Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {rooms.map((room, index) => (
+          {rooms?.slice(0, 3).map((room, index) => (
             <Card
               key={room.id}
               className="overflow-hidden hover-lift card-gradient border-2 animate-scale-in"
@@ -61,13 +40,17 @@ const FeaturedRooms = () => {
               {/* Room Image */}
               <div className="relative h-64 overflow-hidden">
                 <img
-                  src={room.image}
+                  src={
+                    room.image_path
+                      ? `http://localhost:8000/storage/${room.image_path}`
+                      : "https://via.placeholder.com/800x600?text=No+Image"
+                  }
                   alt={room.name}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                 />
                 <Badge
                   className={`absolute top-4 right-4 ${
-                    room.status === "متاحة" ? "bg-green-500" : "bg-red-500"
+                    room.status.toLowerCase().includes("متاح") ? "bg-green-500" : "bg-red-500"
                   }`}
                 >
                   {room.status}
@@ -83,7 +66,7 @@ const FeaturedRooms = () => {
                 {/* Price */}
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-primary">{room.price}</span>
-                  <span className="text-muted-foreground">ريال / ليلة</span>
+                  <span className="text-muted-foreground">ريال / لليوم</span>
                 </div>
 
                 {/* Features */}
@@ -92,19 +75,19 @@ const FeaturedRooms = () => {
                     <Users className="h-4 w-4" />
                     <span>{room.capacity} أشخاص</span>
                   </div>
-                  {room.features.includes("واي فاي") && (
+                  {room.features?.includes("واي فاي") && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Wifi className="h-4 w-4" />
                       <span>واي فاي</span>
                     </div>
                   )}
-                  {room.features.includes("تلفاز") && (
+                  {room.features?.includes("تلفاز") && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Tv className="h-4 w-4" />
                       <span>تلفاز</span>
                     </div>
                   )}
-                  {room.features.includes("قهوة") && (
+                  {room.features?.includes("قهوة") && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Coffee className="h-4 w-4" />
                       <span>قهوة</span>

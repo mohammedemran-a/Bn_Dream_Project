@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -17,8 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, Calendar, Tv } from "lucide-react";
 import { getLeaderboard, getUserPredictions, postPrediction } from "@/api/predictions.ts";
 import { getMatches, Match as API_Match } from "@/api/football_matches.ts";
+import { useAuthStore } from "@/store/useAuthStore";
 
-// 🔹 واجهة البيانات المستخدمة في الصفحة
 export type Match = API_Match;
 
 export type Prediction = {
@@ -38,37 +38,28 @@ export type LeaderboardItem = {
 
 const Matches = () => {
   const queryClient = useQueryClient();
-  const [userId, setUserId] = useState<number | null>(null);
+  const { user } = useAuthStore();
+  const userId = user?.id ?? null;
   const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
-
-  // 🧩 تحميل user_id من localStorage
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("user_id");
-    if (storedUserId) setUserId(Number(storedUserId));
-  }, []);
 
   // 🟢 جلب المباريات
   const { data: matches = [], isLoading: loadingMatches } = useQuery<Match[]>({
     queryKey: ["matches"],
-    queryFn: async () => {
-      const res = await getMatches();
-      return res.data;
-    },
+    queryFn: getMatches,
   });
 
-const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<Prediction[]>({
-  queryKey: ["userPredictions", userId],
-  queryFn: () => {
-    if (!userId) return Promise.resolve([]); // ضمان مصفوفة فارغة إذا لم يوجد userId
-    return getUserPredictions(userId); // getUserPredictions ترجع مصفوفة جاهزة
-  },
-  enabled: !!userId,
-});
+  // 🟢 جلب توقعات المستخدم
+  const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery({
+    queryKey: ["userPredictions", userId],
+    queryFn: () => (userId ? getUserPredictions(userId) : []),
+    enabled: !!userId,
+  });
 
- const { data: leaderboard = [], isLoading: loadingLeaderboard } = useQuery<LeaderboardItem[]>({
-  queryKey: ["leaderboard"],
-  queryFn: getLeaderboard, // مباشرة
-});
+  // 🟢 جلب المتصدرين
+  const { data: leaderboard = [], isLoading: loadingLeaderboard } = useQuery<LeaderboardItem[]>({
+    queryKey: ["leaderboard"],
+    queryFn: getLeaderboard,
+  });
 
   // 🟢 إرسال توقع جديد
   const predictionMutation = useMutation({
@@ -113,7 +104,11 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
     if (!userId) return alert("🚫 يجب تسجيل الدخول أولاً");
 
     const prediction = predictions[matchId];
-    if (!prediction?.team1 && !prediction?.team2) {
+    if (!prediction) return alert("❌ لم يتم إدخال أي توقع");
+
+    if (prediction.submitted) return alert("✅ لقد تم إرسال هذا التوقع مسبقًا");
+
+    if (!prediction.team1 && !prediction.team2) {
       return alert("❌ الرجاء إدخال التوقعين قبل الإرسال");
     }
 
@@ -170,16 +165,19 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {matches.map((match, index) => {
-                  const prediction: Prediction =
-                    predictions[match.id!] ??
-                    userPredictions.find((p) => p.match_id === match.id) ?? {
-                      match_id: match.id!,
-                      team1: 0,
-                      team2: 0,
-                      submitted: false,
-                    };
+                  // ✅ التعديل هنا فقط
+                  const existingPrediction = userPredictions.find(
+                    (p) => p.football_match_id === match.id
+                  );
 
-                  const isSubmitted = prediction.submitted;
+                  const prediction: Prediction = predictions[match.id!] ?? {
+                    match_id: match.id!,
+                    team1: existingPrediction?.team1_score ?? 0,
+                    team2: existingPrediction?.team2_score ?? 0,
+                    submitted: !!existingPrediction,
+                  };
+
+                  const isSubmitted = prediction.submitted || !!existingPrediction;
 
                   return (
                     <Card
@@ -202,7 +200,7 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
                           {match.team2}
                         </CardTitle>
 
-                        <CardDescription className="text-center space-y-1">
+                          <div className="text-center space-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center justify-center gap-2">
                             <Calendar className="h-4 w-4" />
                             <span>{match.date}</span>
@@ -211,7 +209,7 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
                             <Clock className="h-4 w-4" />
                             <span>{match.time}</span>
                           </div>
-                        </CardDescription>
+                        </div>
                       </CardHeader>
 
                       <CardContent className="space-y-4">
@@ -222,7 +220,9 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
 
                           <div className="flex items-center gap-3 justify-center">
                             <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-2">{match.team1}</p>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {match.team1}
+                              </p>
                               <Input
                                 type="number"
                                 placeholder="0"
@@ -230,7 +230,11 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
                                 className="w-16 text-center text-xl font-bold"
                                 value={prediction.team1}
                                 onChange={(e) =>
-                                  handlePredictionChange(match.id!, "team1", e.target.value)
+                                  handlePredictionChange(
+                                    match.id!,
+                                    "team1",
+                                    e.target.value
+                                  )
                                 }
                                 disabled={isSubmitted}
                               />
@@ -239,7 +243,9 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
                             <div className="text-2xl font-bold text-primary">-</div>
 
                             <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-2">{match.team2}</p>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {match.team2}
+                              </p>
                               <Input
                                 type="number"
                                 placeholder="0"
@@ -247,7 +253,11 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
                                 className="w-16 text-center text-xl font-bold"
                                 value={prediction.team2}
                                 onChange={(e) =>
-                                  handlePredictionChange(match.id!, "team2", e.target.value)
+                                  handlePredictionChange(
+                                    match.id!,
+                                    "team2",
+                                    e.target.value
+                                  )
                                 }
                                 disabled={isSubmitted}
                               />
@@ -307,7 +317,9 @@ const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery<P
                             {index + 1}
                           </div>
                           <div>
-                            <p className="font-semibold">{item.user?.name || "مستخدم غير معروف"}</p>
+                            <p className="font-semibold">
+                              {item.user?.name || "مستخدم غير معروف"}
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               مجموع النقاط: {item.total_points}
                             </p>

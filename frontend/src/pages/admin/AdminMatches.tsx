@@ -23,7 +23,7 @@ export default function AdminMatches() {
     queryKey: ["matches"],
     queryFn: async () => {
       const response = await getMatches();
-      return response.data;
+      return response;
     },
     enabled: hasPermission("matches_view"),
   });
