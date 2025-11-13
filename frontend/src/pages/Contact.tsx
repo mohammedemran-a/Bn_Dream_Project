@@ -100,7 +100,7 @@ const Contact = () => {
                         <Input
                           name="phone"
                           type="tel"
-                          placeholder="+967 777 123 456"
+                          placeholder="+967"
                           value={formData.phone}
                           onChange={handleChange}
                           required
@@ -139,23 +139,9 @@ const Contact = () => {
                     </div>
                     <CardTitle>اتصل بنا</CardTitle>
                     <CardDescription className="text-lg">
-                      +967 777 123 456
+                      +967 
                       <br />
-                      +967 777 654 321
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card className="card-gradient border-2 hover-lift">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                      <Mail className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle>راسلنا</CardTitle>
-                    <CardDescription className="text-lg">
-                      info@golden-resort.com
-                      <br />
-                      support@golden-resort.com
+                      +967
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -167,7 +153,7 @@ const Contact = () => {
                     </div>
                     <CardTitle>موقعنا</CardTitle>
                     <CardDescription className="text-lg">
-                      شارع الجمهورية
+                     شارع مذبح مقابل معامل العبسي للتصوير الرقمي
                       <br />
                       صنعاء، اليمن
                     </CardDescription>

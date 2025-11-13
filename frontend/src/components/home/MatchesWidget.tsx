@@ -107,7 +107,7 @@ const MatchesWidget = () => {
     const prediction = predictions[matchId];
     if (!prediction) return alert("❌ لم يتم إدخال أي توقع");
 
-    if (prediction.submitted) return alert("✅ لقد تم إرسال هذا التوقع مسبقًا");
+    if (prediction.submitted) return alert(" لقد تم إرسال هذا التوقع مسبقًا");
 
     if (!prediction.team1 && !prediction.team2) return alert("❌ الرجاء إدخال التوقعين");
 
@@ -202,7 +202,7 @@ const MatchesWidget = () => {
                       onClick={() => handleSubmitPrediction(match.id!)}
                       disabled={isSubmitted || predictionMutation.isPending}
                     >
-                      {isSubmitted ? "✅ تم الإرسال" : "إرسال التوقع"}
+                      {isSubmitted ? "تم الإرسال" : "إرسال التوقع"}
                     </Button>
                   </CardContent>
                 </Card>

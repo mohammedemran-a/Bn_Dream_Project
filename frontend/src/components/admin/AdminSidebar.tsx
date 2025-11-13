@@ -10,7 +10,6 @@ import {
   Shield,
   Bell,
   Settings,
-  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,12 +58,6 @@ export const AdminSidebar = () => {
           );
         })}
         
-        <button
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-destructive/10 hover:text-destructive text-muted-foreground mt-8"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">تسجيل الخروج</span>
-        </button>
       </nav>
     </aside>
   );

@@ -36,10 +36,14 @@ export const NotificationSheet = ({
   const actualOpen = isControlled ? open : internalOpen;
   const actualOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
 
-  const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: getNotifications,
-  });
+const token = localStorage.getItem("token");
+
+const { data: notifications = [], isLoading } = useQuery({
+  queryKey: ["notifications"],
+  queryFn: getNotifications,
+  enabled: !!token, // ✅ فقط عند وجود توكن
+  retry: false, // ⛔ لا تعيد المحاولة
+});
 
   // ✅ Mutation لتحديد كمقروء
   const markAsReadMutation = useMutation({

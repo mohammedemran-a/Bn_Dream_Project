@@ -23,7 +23,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { login, register } = useAuthStore();
 
-  // البيانات الخاصة بالدخول والتسجيل مع الأنواع
+  // البيانات الخاصة بالدخول والتسجيل
   const [loginData, setLoginData] = useState<{ email: string; password: string }>({
     email: "",
     password: "",
@@ -42,15 +42,29 @@ const Auth = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // ==========================================================
   // 🔹 دالة تسجيل الدخول
   // ==========================================================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const newErrors: { [key: string]: string } = {};
+    if (!loginData.email) newErrors.email = "البريد الإلكتروني مطلوب";
+    else if (!/\S+@\S+\.\S+/.test(loginData.email))
+      newErrors.email = "البريد الإلكتروني غير صالح";
+    if (!loginData.password) newErrors.password = "كلمة المرور مطلوبة";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setLoading(true);
     try {
-      await login(loginData); // استخدم Zustand
+      await login(loginData);
       toast.success("تم تسجيل الدخول بنجاح ✅");
       navigate("/");
     } catch (error: unknown) {
@@ -66,9 +80,25 @@ const Auth = () => {
   // ==========================================================
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const newErrors: { [key: string]: string } = {};
+    if (!registerData.name) newErrors.name = "الاسم مطلوب";
+    if (!registerData.email) newErrors.email = "البريد الإلكتروني مطلوب";
+    else if (!/\S+@\S+\.\S+/.test(registerData.email))
+      newErrors.email = "البريد الإلكتروني غير صالح";
+    if (!registerData.password) newErrors.password = "كلمة المرور مطلوبة";
+    else if (registerData.password.length < 8)
+      newErrors.password = " يجب أن تكون كلمة المرور 8 أحرف على الأقل ";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setLoading(true);
     try {
-      await register(registerData); // استخدم Zustand
+      await register(registerData);
       toast.success("تم إنشاء الحساب بنجاح ✅");
       navigate("/");
     } catch (error: unknown) {
@@ -122,8 +152,10 @@ const Auth = () => {
                         onChange={(e) =>
                           setLoginData({ ...loginData, email: e.target.value })
                         }
-                        required
                       />
+                      {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">
@@ -136,8 +168,12 @@ const Auth = () => {
                         onChange={(e) =>
                           setLoginData({ ...loginData, password: e.target.value })
                         }
-                        required
                       />
+                      {errors.password && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.password}
+                        </p>
+                      )}
                     </div>
                     <Button
                       type="submit"
@@ -162,8 +198,10 @@ const Auth = () => {
                         onChange={(e) =>
                           setRegisterData({ ...registerData, name: e.target.value })
                         }
-                        required
                       />
+                      {errors.name && (
+                        <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">
@@ -176,8 +214,10 @@ const Auth = () => {
                         onChange={(e) =>
                           setRegisterData({ ...registerData, email: e.target.value })
                         }
-                        required
                       />
+                      {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">
@@ -185,7 +225,7 @@ const Auth = () => {
                       </label>
                       <Input
                         type="tel"
-                        placeholder="05xxxxxxxx"
+                        placeholder="+967 "
                         value={registerData.phone}
                         onChange={(e) =>
                           setRegisterData({ ...registerData, phone: e.target.value })
@@ -201,10 +241,17 @@ const Auth = () => {
                         placeholder="••••••••"
                         value={registerData.password}
                         onChange={(e) =>
-                          setRegisterData({ ...registerData, password: e.target.value })
+                          setRegisterData({
+                            ...registerData,
+                            password: e.target.value,
+                          })
                         }
-                        required
                       />
+                      {errors.password && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.password}
+                        </p>
+                      )}
                     </div>
                     <Button
                       type="submit"

@@ -99,11 +99,11 @@ const FeaturedRooms = () => {
                 <Link to={`/rooms/${room.id}`} className="w-full pointer-events-none">
                   <Button
                     className={`w-full shadow-elegant ${
-                      room.status !== "متاحة" ? "opacity-100 cursor-not-allowed" : ""
+                      room.status !== "متاح" ? "opacity-100 cursor-not-allowed" : ""
                     }`}
-                    disabled={room.status !== "متاحة"}
+                    disabled={room.status !== "متاح"}
                   >
-                    {room.status === "متاحة" ? "احجز الآن" : "غير متاحة"}
+                    {room.status === "متاح" ? "احجز الآن" : "غير متاح"}
                   </Button>
                 </Link>
               </CardFooter>

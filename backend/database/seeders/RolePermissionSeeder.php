@@ -46,7 +46,6 @@ class RolePermissionSeeder extends Seeder
             "roles_edit",
             "roles_delete",
             "notifications_view",
-            "notifications_send",
             "notifications_delete",
             "settings_view",
             "settings_edit",
@@ -79,7 +78,7 @@ class RolePermissionSeeder extends Seeder
 
         $admin->assignRole('admin');
 
-        $this->command->info('✅ Roles & permissions seeded. Admin has all permissions, user has none.');
+        $this->command->info('Roles & permissions seeded. Admin has all permissions, user has none.');
     }
 }
 
