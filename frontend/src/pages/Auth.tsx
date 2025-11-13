@@ -1,3 +1,4 @@
+// src/pages/Auth.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -14,21 +15,37 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { AxiosError } from "axios";
 
+// ==========================================================
+// 🔹 صفحة تسجيل الدخول / إنشاء الحساب
+// ==========================================================
 const Auth = () => {
   const navigate = useNavigate();
   const { login, register } = useAuthStore();
 
-  const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({
+  // البيانات الخاصة بالدخول والتسجيل مع الأنواع
+  const [loginData, setLoginData] = useState<{ email: string; password: string }>({
+    email: "",
+    password: "",
+  });
+
+  const [registerData, setRegisterData] = useState<{
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+  }>({
     name: "",
     email: "",
     phone: "",
     password: "",
   });
+
   const [loading, setLoading] = useState(false);
 
+  // ==========================================================
+  // 🔹 دالة تسجيل الدخول
+  // ==========================================================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -37,13 +54,16 @@ const Auth = () => {
       toast.success("تم تسجيل الدخول بنجاح ✅");
       navigate("/");
     } catch (error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "فشل تسجيل الدخول ❌");
+      const err = error as { message?: string };
+      toast.error(err.message || "فشل تسجيل الدخول ❌");
     } finally {
       setLoading(false);
     }
   };
 
+  // ==========================================================
+  // 🔹 دالة إنشاء حساب
+  // ==========================================================
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -52,8 +72,8 @@ const Auth = () => {
       toast.success("تم إنشاء الحساب بنجاح ✅");
       navigate("/");
     } catch (error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "فشل إنشاء الحساب ❌");
+      const err = error as { message?: string };
+      toast.error(err.message || "فشل إنشاء الحساب ❌");
     } finally {
       setLoading(false);
     }
@@ -88,6 +108,7 @@ const Auth = () => {
                   </TabsTrigger>
                 </TabsList>
 
+                {/* ================= تسجيل الدخول ================= */}
                 <TabsContent value="login">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
@@ -95,6 +116,7 @@ const Auth = () => {
                         البريد الإلكتروني
                       </label>
                       <Input
+                        type="email"
                         placeholder="example@email.com"
                         value={loginData.email}
                         onChange={(e) =>
@@ -127,6 +149,7 @@ const Auth = () => {
                   </form>
                 </TabsContent>
 
+                {/* ================= إنشاء حساب ================= */}
                 <TabsContent value="register">
                   <form onSubmit={handleRegister} className="space-y-4">
                     <div>

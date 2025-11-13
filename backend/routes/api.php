@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\PredictionController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\Api\NotificationController;
 
 Route::post('/predictions', [PredictionController::class, 'store']);
 Route::get('/predictions/user/{user_id}', [PredictionController::class, 'getUserPredictions']);
@@ -44,7 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/users/{id}', [AuthController::class, 'deleteUser']);
 });
 
-Route::apiResource('bookings', BookingController::class);
+
 
 
 Route::get('/orders', [OrderController::class, 'index']);
@@ -76,3 +77,18 @@ Route::get('/roles', [RolePermissionController::class, 'index']);
     Route::post('/roles', [RolePermissionController::class, 'store']);
     Route::put('/roles/{id}', [RolePermissionController::class, 'update']);
     Route::delete('/roles/{id}', [RolePermissionController::class, 'destroy']);
+
+
+
+
+Route::apiResource('bookings', BookingController::class);
+
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [NotificationController::class, 'clearAll']);
+});

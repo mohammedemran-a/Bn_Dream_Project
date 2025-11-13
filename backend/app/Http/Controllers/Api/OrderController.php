@@ -7,6 +7,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Notifications\OrderProcessedNotification;
 
 class OrderController extends Controller
 {
@@ -56,31 +59,47 @@ class OrderController extends Controller
             ]);
         }
 
+         // 🟢 إشعار المشرفين بوجود طلب جديد
+        $admins = User::role('admin')->get(); // تأكد أنك تستخدم Spatie Roles
+        foreach ($admins as $admin) {
+            $admin->notify(new NewOrderNotification($order));
+        }
+
         return response()->json([
             'message' => 'تم إنشاء الطلب بنجاح',
             'order' => $order->load('products')
         ], 201);
     }
 
-    // 🟢 تحديث حالة الطلب
-    public function updateStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:جديد,قيد التنفيذ,تم التسليم,ملغي',
-        ]);
+ public function updateStatus(Request $request, $id)
+{
 
-        $order = Order::find($id);
-        if (!$order) {
-            return response()->json(['message' => 'الطلب غير موجود'], 404);
-        }
 
-        $order->update(['status' => $request->status]);
+    $request->validate([
+        'status' => 'required|in:جديد,قيد التنفيذ,تم التسليم,ملغي',
+    ]);
 
-        return response()->json([
-            'message' => 'تم تحديث حالة الطلب',
-            'order' => $order
-        ]);
+    $order = Order::find($id);
+    if (!$order) {
+        return response()->json(['message' => 'الطلب غير موجود'], 404);
     }
+
+    // ✅ احفظ الحالة القديمة قبل التحديث
+    $oldStatus = $order->status;
+    // ✅ حدث الحالة الجديدة
+    $order->update(['status' => $request->status]);
+
+    // ✅ تحقق إذا تغيرت الحالة فعلاً
+    if ($order->user && $oldStatus !== $request->status) {
+        $order->user->notify(new OrderProcessedNotification($order, $request->status));
+    }
+
+    return response()->json([
+        'message' => 'تم تحديث حالة الطلب',
+        'order' => $order
+    ]);
+}
+
 
     // 🟢 حذف طلب
     public function destroy($id)

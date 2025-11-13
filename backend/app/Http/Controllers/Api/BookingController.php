@@ -7,6 +7,9 @@ use App\Models\Booking;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\User;
+use App\Notifications\NewBookingNotification;
+use App\Notifications\BookingConfirmedNotification;
 
 class BookingController extends Controller
 {
@@ -84,6 +87,11 @@ class BookingController extends Controller
         $room->status = 'محجوز';
         $room->save();
 
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new NewBookingNotification($booking));
+        }
+
         return response()->json([
             'message' => 'تم إنشاء الحجز بنجاح',
             'booking' => $booking
@@ -105,33 +113,39 @@ class BookingController extends Controller
      * تحديث بيانات الحجز، بما في ذلك الحالة.
      * إذا تم الإلغاء أو الانتهاء، يتم إعادة الغرفة إلى "متاح".
      */
-    public function update(Request $request, string $id)
-    {
-        $booking = Booking::findOrFail($id);
+public function update(Request $request, string $id)
+{
+    $booking = Booking::findOrFail($id);
 
-        $booking->update($request->all());
+    // ✅ احفظ الحالة القديمة قبل التحديث
+    $oldStatus = $booking->status;
 
-        // التعامل مع تغيير حالة الغرفة
-        if (isset($request->status)) {
-            $room = $booking->room;
-            
-            // إذا أصبح الحجز ملغى أو انتهى، نعيد الغرفة متاحة
-            if (in_array($request->status, ['ملغى', 'منتهي'])) {
-                $room->status = 'متاح';
-                $room->save();
-            }
-            // إذا أصبح الحجز مؤكد أو قيد المراجعة، نجعل الغرفة محجوزة
-            elseif (in_array($request->status, ['مؤكد', 'قيد المراجعة'])) {
-                $room->status = 'محجوز';
-                $room->save();
-            }
+    // ✅ حدث بيانات الحجز
+    $booking->update($request->all());
+
+    // ✅ التعامل مع حالة الغرفة
+    if (isset($request->status)) {
+        $room = $booking->room;
+
+        if (in_array($request->status, ['ملغى', 'منتهي'])) {
+            $room->status = 'متاح';
+        } elseif (in_array($request->status, ['مؤكد', 'قيد المراجعة'])) {
+            $room->status = 'محجوز';
         }
 
-        return response()->json([
-            'message' => 'تم تحديث بيانات الحجز بنجاح',
-            'booking' => $booking
-        ]);
+        $room->save();
     }
+
+    // 🟢 إرسال إشعار إذا تغيرت الحالة إلى "مؤكد"
+    if (isset($request->status) && $request->status === 'مؤكد' && $oldStatus !== 'مؤكد') {
+        $booking->user->notify(new BookingConfirmedNotification($booking));
+    }
+
+    return response()->json([
+        'message' => 'تم تحديث بيانات الحجز بنجاح',
+        'booking' => $booking
+    ]);
+}
 
     /**
      * 🔴 destroy:

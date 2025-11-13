@@ -95,10 +95,14 @@ const FeaturedRooms = () => {
                   )}
                 </div>
               </CardContent>
-
               <CardFooter>
-                <Link to={`/rooms/${room.id}`} className="w-full">
-                  <Button className="w-full shadow-elegant" disabled={room.status === "محجوزة"}>
+                <Link to={`/rooms/${room.id}`} className="w-full pointer-events-none">
+                  <Button
+                    className={`w-full shadow-elegant ${
+                      room.status !== "متاحة" ? "opacity-100 cursor-not-allowed" : ""
+                    }`}
+                    disabled={room.status !== "متاحة"}
+                  >
                     {room.status === "متاحة" ? "احجز الآن" : "غير متاحة"}
                   </Button>
                 </Link>

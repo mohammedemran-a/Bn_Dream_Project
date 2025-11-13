@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CartSheet } from "@/components/cart/CartSheet";
+import { NotificationSheet } from "@/components/notifications/NotificationSheet"; // ✅ تمت الإضافة هنا
 import { useAuthStore } from "@/store/useAuthStore"; // Zustand
 
 const Navbar = () => {
@@ -88,6 +89,7 @@ const Navbar = () => {
 
           {/* Desktop Right Side */}
           <div className="hidden lg:flex items-center gap-2 animate-fade-in-left shrink-0">
+            <NotificationSheet /> {/* ✅ تمت إضافته هنا */}
             <CartSheet />
             <ThemeToggle />
             {user ? (
@@ -112,6 +114,7 @@ const Navbar = () => {
 
           {/* Mobile */}
           <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
+            <NotificationSheet /> {/* ✅ تمت إضافته هنا أيضًا */}
             <CartSheet />
             <ThemeToggle />
             <button
