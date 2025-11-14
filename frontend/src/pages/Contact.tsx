@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Send } from "lucide-react";
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { sendContactMessage, ContactMessage, ContactResponse } from "@/api/contacts";
+import { getSettings, Settings } from "@/api/settings";
 import type { AxiosError } from "axios";
 
 const Contact = () => {
@@ -24,6 +25,24 @@ const Contact = () => {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const [settings, setSettings] = useState<Settings>({
+    phone: "",
+    email: "",
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await getSettings();
+        setSettings(response.data);
+      } catch (error) {
+        console.error("❌ خطأ في جلب الإعدادات:", error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,18 +58,19 @@ const Contact = () => {
 
       alert("✅ تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
       setFormData({ name: "", email: "", phone: "", message: "" });
-   } catch (error) {
-    const err = error as AxiosError<{ message?: string }>;
-    console.error("❌ خطأ أثناء إرسال الرسالة:", err.response?.data?.message || err.message);
-    alert("حدث خطأ أثناء الإرسال، حاول مجدداً.");
-}
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      console.error("❌ خطأ أثناء إرسال الرسالة:", err.response?.data?.message || err.message);
+      alert("حدث خطأ أثناء الإرسال، حاول مجدداً.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen">
       <Navbar />
       <main className="pt-16">
-        {/* Page Header */}
         <section className="bg-gradient-to-b from-primary/10 to-background py-20 px-4">
           <div className="container mx-auto text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold">تواصل معنا</h1>
@@ -63,6 +83,7 @@ const Contact = () => {
         <section className="py-12 px-4">
           <div className="container mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
               {/* Contact Form */}
               <div className="animate-fade-in-right">
                 <Card className="card-gradient border-2">
@@ -84,6 +105,7 @@ const Contact = () => {
                           required
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
                         <Input
@@ -95,6 +117,7 @@ const Contact = () => {
                           required
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium mb-2">رقم الهاتف</label>
                         <Input
@@ -106,6 +129,7 @@ const Contact = () => {
                           required
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium mb-2">رسالتك</label>
                         <Textarea
@@ -117,6 +141,7 @@ const Contact = () => {
                           required
                         />
                       </div>
+
                       <Button type="submit" className="w-full shadow-elegant gap-2" disabled={loading}>
                         {loading ? "جارٍ الإرسال..." : (
                           <>
@@ -132,6 +157,8 @@ const Contact = () => {
 
               {/* Contact Info */}
               <div className="space-y-6 animate-fade-in-left">
+
+                {/* Phone Card */}
                 <Card className="card-gradient border-2 hover-lift">
                   <CardHeader>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -139,13 +166,25 @@ const Contact = () => {
                     </div>
                     <CardTitle>اتصل بنا</CardTitle>
                     <CardDescription className="text-lg">
-                      +967 
-                      <br />
-                      +967
+                      {String(settings.phone || "+967")}
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
+                {/* Email Card */}
+                <Card className="card-gradient border-2 hover-lift">
+                  <CardHeader>
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Mail className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle>البريد الإلكتروني</CardTitle>
+                    <CardDescription className="text-lg">
+                      {String(settings.email || "example@email.com")}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                {/* Address Card */}
                 <Card className="card-gradient border-2 hover-lift">
                   <CardHeader>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -153,27 +192,13 @@ const Contact = () => {
                     </div>
                     <CardTitle>موقعنا</CardTitle>
                     <CardDescription className="text-lg">
-                     شارع مذبح مقابل معامل العبسي للتصوير الرقمي
+                      شارع مذبح مقابل معامل العبسي للتصوير الرقمي
                       <br />
                       صنعاء، اليمن
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
-                {/* Map */}
-                <Card className="overflow-hidden border-2">
-                  <div className="h-64 bg-muted">
-                    <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3838.0!2d44.2!3d15.3!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTXCsDE4JzAwLjAiTiA0NMKwMTInMDAuMCJF!5e0!3m2!1sen!2s!4v1234567890"
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
-                </Card>
               </div>
             </div>
           </div>
