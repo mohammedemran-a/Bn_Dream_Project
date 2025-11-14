@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/useAuthStore";
-import Navbar from "@/components/layout/Navbar";
 import {
   Card,
   CardContent,
@@ -111,7 +110,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
-      <Navbar />
+      {/* <Navbar /> */}
       <main className="pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-md">
           <Card className="card-gradient border-2 shadow-elegant animate-scale-in">

@@ -18,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
           $middleware->alias([
-         \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        'stateful' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+         // \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
     ]);
         

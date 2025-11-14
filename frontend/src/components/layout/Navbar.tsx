@@ -12,20 +12,27 @@ import {
   User,
   LogOut,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CartSheet } from "@/components/cart/CartSheet";
-import { NotificationSheet } from "@/components/notifications/NotificationSheet"; // ✅ تمت الإضافة هنا
-import { useAuthStore } from "@/store/useAuthStore"; // Zustand
+import { NotificationSheet } from "@/components/notifications/NotificationSheet";
+import { useAuthStore } from "@/store/useAuthStore";
+import { getSettings, Settings as SettingsType } from "@/api/settings";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  // Zustand store
   const { user, logout, hasPermission } = useAuthStore();
 
-  // روابط التنقل مع الصلاحيات
+  const [settings, setSettings] = useState<SettingsType>({});
+
+  useEffect(() => {
+    getSettings()
+      .then((res) => setSettings(res.data))
+      .catch(() => console.warn("فشل في جلب إعدادات الموقع"));
+  }, []);
+
   const navLinks = [
     { name: "الرئيسية", path: "/", icon: Home },
     { name: "الغرف", path: "/rooms", icon: DoorOpen },
@@ -36,11 +43,16 @@ const Navbar = () => {
       name: "لوحة التحكم",
       path: "/admin",
       icon: Settings,
-      permission: "dashboard_access", // يظهر فقط لمن لديهم الصلاحية
+      permission: "dashboard_access",
     },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const logoSrc =
+    settings.logo instanceof File
+      ? URL.createObjectURL(settings.logo)
+      : settings.logo || "/BN_dream.png";
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
@@ -51,10 +63,12 @@ const Navbar = () => {
             to="/"
             className="flex items-center gap-1.5 sm:gap-2 animate-fade-in-right shrink-0"
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
-              <span className="text-primary-foreground font-bold text-lg sm:text-xl">
-                ا
-              </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 flex items-center justify-center shadow-elegant overflow-hidden">
+              <img
+                src={logoSrc}
+                alt="شعار الموقع"
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="text-base sm:text-xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent hidden sm:inline-block">
               نظام استراحة بي إن إيدريم
@@ -89,7 +103,7 @@ const Navbar = () => {
 
           {/* Desktop Right Side */}
           <div className="hidden lg:flex items-center gap-2 animate-fade-in-left shrink-0">
-            <NotificationSheet /> {/* ✅ تمت إضافته هنا */}
+            <NotificationSheet />
             <CartSheet />
             <ThemeToggle />
             {user ? (
@@ -114,7 +128,7 @@ const Navbar = () => {
 
           {/* Mobile */}
           <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
-            <NotificationSheet /> {/* ✅ تمت إضافته هنا أيضًا */}
+            <NotificationSheet />
             <CartSheet />
             <ThemeToggle />
             <button

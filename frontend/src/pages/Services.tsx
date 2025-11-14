@@ -98,13 +98,13 @@ const Services = () => {
   const filterByCategory = (category: string) =>
     products.filter((p) => p.category === category);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-xl font-bold">
-        جاري تحميل المنتجات...
-      </div>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="flex items-center justify-center h-screen text-xl font-bold">
+  //       جاري تحميل المنتجات...
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-background text-foreground">

@@ -17,8 +17,6 @@ const AdminSettings: React.FC = () => {
     logo: "",
     email: "",
     phone: "",
-    whatsapp: "",
-    telegram: "",
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -187,26 +185,6 @@ const AdminSettings: React.FC = () => {
               <Input
                 id="phone"
                 value={String(settings.phone ?? "")}
-                onChange={handleInputChange}
-                disabled={!isEditable || loading}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="whatsapp">رقم الواتساب</Label>
-              <Input
-                id="whatsapp"
-                value={String(settings.whatsapp ?? "")}
-                onChange={handleInputChange}
-                disabled={!isEditable || loading}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="telegram">معرف التليجرام</Label>
-              <Input
-                id="telegram"
-                value={String(settings.telegram ?? "")}
                 onChange={handleInputChange}
                 disabled={!isEditable || loading}
               />

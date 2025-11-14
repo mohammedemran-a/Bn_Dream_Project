@@ -136,16 +136,16 @@ const Matches = () => {
     );
   }
 
-  // 🟡 أثناء تحميل البيانات
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg text-muted-foreground animate-pulse">
-          جاري تحميل البيانات...
-        </p>
-      </div>
-    );
-  }
+  // // 🟡 أثناء تحميل البيانات
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <p className="text-lg text-muted-foreground animate-pulse">
+  //         جاري تحميل البيانات...
+  //       </p>
+  //     </div>
+  //   );
+  // }
 
   // ✅ عرض الصفحة بعد تحميل كل البيانات
   return (
