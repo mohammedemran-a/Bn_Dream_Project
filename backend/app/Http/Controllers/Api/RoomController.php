@@ -38,13 +38,13 @@ class RoomController extends Controller
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'features' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', // 10 MB
         ]);
 
         if ($request->hasFile('image')) {
             // حفظ الصورة داخل storage/app/public/rooms
             $path = $request->file('image')->store('rooms', 'public');
-            $validated['image_path'] = $path; // سيتم تخزين المسار مثل rooms/filename.jpg
+            $validated['image_path'] = $path;
         }
 
         $room = Room::create($validated);
@@ -67,7 +67,7 @@ class RoomController extends Controller
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'features' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', // 10 MB
         ]);
 
         if ($request->hasFile('image')) {
