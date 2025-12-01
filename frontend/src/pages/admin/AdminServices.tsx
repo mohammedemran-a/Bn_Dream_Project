@@ -1,3 +1,4 @@
+// src/pages/admin/AdminServices.tsx
 import { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getProducts, createProduct, updateProduct, deleteProduct, Product } from "@/api/products.ts";
+import { BASE_URL } from "@/api/axios";
 
 const categories = ["البقالة", "القات", "الشيشة", "الكروت", "القهوة"];
 
@@ -150,7 +152,7 @@ const AdminServices = () => {
                     src={
                       product.image?.startsWith("http")
                         ? product.image
-                        : `http://127.0.0.1:8000/storage/${product.image}`
+                        : `${BASE_URL}/storage/${product.image}`
                     }
                     alt={product.name}
                     className="w-16 h-16 object-cover rounded border"
@@ -300,7 +302,11 @@ const AdminServices = () => {
                     <Input id="image" type="file" accept="image/*" onChange={(e) => updateFormField("image", e.target.files?.[0] ?? null)} />
                     {editingProduct?.image && (
                       <img
-                        src={editingProduct.image.startsWith("http") ? editingProduct.image : `http://127.0.0.1:8000/storage/${editingProduct.image}`}
+                        src={
+                          editingProduct.image.startsWith("http")
+                            ? editingProduct.image
+                            : `${BASE_URL}/storage/${editingProduct.image}`
+                        }
                         alt="Current"
                         className="w-24 h-24 object-cover mt-2 rounded"
                       />

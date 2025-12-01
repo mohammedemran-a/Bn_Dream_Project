@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "./axios";
+import instance, { AxiosError } from "./axios"; // ← تصحيح مهم
 
 export interface IUser {
   id: number;
@@ -16,23 +16,17 @@ export interface UserFormData {
   role: string;
 }
 
-// واجهة عامة للخطأ من API
 interface ApiError {
   message: string;
   [key: string]: unknown;
 }
 
 // ==========================================================
-// 🔹 جلب جميع المستخدمين (خاص بالمشرف)
+// 🔹 جلب جميع المستخدمين
 // ==========================================================
 export const getAllUsers = async (): Promise<IUser[]> => {
-  const token = localStorage.getItem("token");
-  if (!token) return [];
-
   try {
-    const { data } = await axios.get("/api/users", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const { data } = await instance.get("/api/users"); // ← بدون headers
     return data.users || [];
   } catch (error) {
     const err = error as AxiosError<ApiError>;
@@ -44,13 +38,8 @@ export const getAllUsers = async (): Promise<IUser[]> => {
 // 🔹 إنشاء مستخدم جديد
 // ==========================================================
 export const createUser = async (data: UserFormData): Promise<IUser> => {
-  const token = localStorage.getItem("token");
-  if (!token) throw { message: "يجب تسجيل الدخول أولاً" };
-
   try {
-    const { data: response } = await axios.post<{ user: IUser }>("/api/users", data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const { data: response } = await instance.post<{ user: IUser }>("/api/users", data);
     return response.user;
   } catch (error) {
     const err = error as AxiosError<ApiError>;
@@ -62,13 +51,8 @@ export const createUser = async (data: UserFormData): Promise<IUser> => {
 // 🔹 تعديل بيانات مستخدم
 // ==========================================================
 export const updateUser = async (id: number, data: UserFormData): Promise<IUser> => {
-  const token = localStorage.getItem("token");
-  if (!token) throw { message: "يجب تسجيل الدخول أولاً" };
-
   try {
-    const { data: response } = await axios.put<{ user: IUser }>(`/api/users/${id}`, data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const { data: response } = await instance.put<{ user: IUser }>(`/api/users/${id}`, data);
     return response.user;
   } catch (error) {
     const err = error as AxiosError<ApiError>;
@@ -80,13 +64,8 @@ export const updateUser = async (id: number, data: UserFormData): Promise<IUser>
 // 🔹 حذف مستخدم
 // ==========================================================
 export const deleteUser = async (id: number): Promise<void> => {
-  const token = localStorage.getItem("token");
-  if (!token) throw { message: "يجب تسجيل الدخول أولاً" };
-
   try {
-    await axios.delete(`/api/users/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await instance.delete(`/api/users/${id}`);
   } catch (error) {
     const err = error as AxiosError<ApiError>;
     throw err.response?.data || { message: "فشل في حذف المستخدم" };

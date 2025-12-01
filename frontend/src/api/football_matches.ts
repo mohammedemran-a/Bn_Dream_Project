@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_URL = "http://127.0.0.1:8000/api/football-matches";
+import instance from "./axios"; // 🔥 استدعاء axios instance بدل axios
 
 // 🧩 نوع المباراة
 export interface Match {
@@ -14,36 +12,32 @@ export interface Match {
   status: "قادمة" | "جارية" | "منتهية";
 }
 
+// رابط API الأساسي
+const API_URL = "/api/football-matches";
+
 // 🟢 جلب كل المباريات
 export const getMatches = async () => {
-  const response = await axios.get<Match[]>(API_URL);
-   return response.data;
+  const response = await instance.get<Match[]>(API_URL);
+  return response.data;
 };
 
 // 🟢 جلب مباراة واحدة
 export const getMatch = async (id: number) => {
-  const response = await axios.get<Match>(`${API_URL}/${id}`);
+  const response = await instance.get<Match>(`${API_URL}/${id}`);
   return response.data;
 };
 
 // 🟢 إنشاء مباراة جديدة
 export const createMatch = async (data: Omit<Match, "id">) => {
-  const response = await axios.post(API_URL, data, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return response;
+  return await instance.post(API_URL, data);
 };
 
 // ✏️ تحديث مباراة
 export const updateMatch = async (id: number, data: Partial<Match>) => {
-  const response = await axios.post(`${API_URL}/${id}?_method=PUT`, data, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return response;
+  return await instance.post(`${API_URL}/${id}?_method=PUT`, data);
 };
 
 // 🔴 حذف مباراة
 export const deleteMatch = async (id: number) => {
-  const response = await axios.delete(`${API_URL}/${id}`);
-  return response;
+  return await instance.delete(`${API_URL}/${id}`);
 };

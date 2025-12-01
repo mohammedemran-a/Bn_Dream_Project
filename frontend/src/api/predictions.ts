@@ -1,12 +1,16 @@
-import axios from "axios";
+import instance from "./axios"; // 🔥 استخدام axios instance بدل axios
 
-// 🔹 عنوان الـ API
-const API_URL = "http://localhost:8000/api/predictions";
+// ========================
+// 📌 الـ API الأساسي
+// ========================
+const API_URL = "/api/predictions";
 
-// 🔹 أنواع البيانات
+// ========================
+// 📌 أنواع البيانات
+// ========================
 export interface PredictionData {
   user_id: number;
-  match_id: number; // ← هذا فقط لسهولة الاستخدام في الواجهة
+  match_id: number;
   team1: number;
   team2: number;
 }
@@ -37,37 +41,38 @@ export interface LeaderboardItem {
   };
 }
 
-/**
- * 🟢 إرسال توقع جديد أو تحديث موجود
- * يتوافق مع Laravel (PredictionController@store)
- */
+// ===============================
+// 🟢 إرسال توقع أو تحديث توقع
+// POST /api/predictions
+// ===============================
 export const postPrediction = async (data: PredictionData) => {
   const payload = {
     user_id: data.user_id,
-    football_match_id: data.match_id, // ✅ مطابق للـ backend
-    team1_score: data.team1,          // ✅ مطابق
-    team2_score: data.team2,          // ✅ مطابق
+    football_match_id: data.match_id,
+    team1_score: data.team1,
+    team2_score: data.team2,
   };
 
-  const response = await axios.post(API_URL, payload);
+  const response = await instance.post(API_URL, payload);
   return response.data as { message: string; data: PredictionResponse };
 };
 
-/**
- * 🟢 جلب جميع توقعات المستخدم
- * GET /api/predictions/user/{userId}
- */
+// ===============================
+// 🟢 جلب توقعات المستخدم
+// GET /api/predictions/user/{id}
+// ===============================
 export const getUserPredictions = async (userId: number) => {
-  if (!userId) return []; // ✅ حماية إضافية
-  const response = await axios.get(`${API_URL}/user/${userId}`);
+  if (!userId) return []; // ✨ حماية إذا لم يوجد user
+
+  const response = await instance.get(`${API_URL}/user/${userId}`);
   return Array.isArray(response.data) ? response.data : [];
 };
 
-/**
- * 🏆 جلب قائمة المتصدرين
- * GET /api/predictions/leaderboard
- */
+// ===============================
+// 🏆 جلب قائمة المتصدرين
+// GET /api/predictions/leaderboard
+// ===============================
 export const getLeaderboard = async () => {
-  const response = await axios.get(`${API_URL}/leaderboard`);
+  const response = await instance.get(`${API_URL}/leaderboard`);
   return Array.isArray(response.data) ? response.data : [];
 };

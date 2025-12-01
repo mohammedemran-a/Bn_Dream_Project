@@ -1,40 +1,44 @@
-import axios from "axios";
+import instance from "./axios"; // 🔥 استدعاء axios instance بدلاً من axios
 
-const API_URL = "http://127.0.0.1:8000/api/notifications";
+// رابط الإشعارات
+const API_URL = "/api/notifications";
 
-// 🔹 إعداد التوكن مرة واحدة
-const authHeaders = () => ({
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  },
-});
-
-// ✅ جلب جميع الإشعارات
+// ============================
+// 🔹 جلب جميع الإشعارات
+// ============================
 export const getNotifications = async () => {
-  const res = await axios.get(API_URL, authHeaders());
+  const res = await instance.get(API_URL);
   return res.data;
 };
 
-// ✅ جلب الإشعارات غير المقروءة فقط
+// ============================
+// 🔹 جلب الإشعارات غير المقروءة
+// ============================
 export const getUnreadNotifications = async () => {
-  const res = await axios.get(`${API_URL}/unread`, authHeaders());
+  const res = await instance.get(`${API_URL}/unread`);
   return res.data;
 };
 
-// ✅ تحديد إشعار كمقروء
+// ============================
+// 🔹 تحديد إشعار كمقروء
+// ============================
 export const markNotificationAsRead = async (id: string) => {
-  const res = await axios.post(`${API_URL}/${id}/read`, {}, authHeaders());
+  const res = await instance.post(`${API_URL}/${id}/read`);
   return res.data;
 };
 
-// ✅ حذف إشعار واحد
+// ============================
+// 🔹 حذف إشعار
+// ============================
 export const deleteNotification = async (id: string) => {
-  const res = await axios.delete(`${API_URL}/${id}`, authHeaders());
+  const res = await instance.delete(`${API_URL}/${id}`);
   return res.data;
 };
 
-// ✅ حذف جميع الإشعارات
+// ============================
+// 🔹 حذف جميع الإشعارات
+// ============================
 export const clearAllNotifications = async () => {
-  const res = await axios.delete(API_URL, authHeaders());
+  const res = await instance.delete(API_URL);
   return res.data;
 };

@@ -40,7 +40,6 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
-// ✅ استدعاء دوال الـ API من الملف الخارجي
 import {
   getRooms,
   createRoom,
@@ -48,10 +47,8 @@ import {
   deleteRoom,
   type Room,
 } from "@/api/rooms";
+import { BASE_URL } from "@/api/axios";
 
-// ===========================================
-// 🧩 COMPONENT
-// ===========================================
 const categories = [
   "غرف خاصة",
   "غرف عامة",
@@ -100,8 +97,8 @@ const AdminRooms = () => {
   const [form, setForm] = useState<RoomForm>({
     category: "غرف خاصة",
     name: "",
-    price: "",
-    capacity: "",
+    price: "0",
+    capacity: "1",
     status: "متاح",
     description: "",
     features: "",
@@ -123,8 +120,8 @@ const AdminRooms = () => {
     setForm({
       category: "غرف خاصة",
       name: "",
-      price: "",
-      capacity: "",
+      price: "0",
+      capacity: "1",
       status: "متاح",
       description: "",
       features: "",
@@ -132,19 +129,19 @@ const AdminRooms = () => {
     });
   };
 
-  // ✅ إرسال النموذج (إضافة أو تعديل)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     const formData = new FormData();
     formData.append("category", form.category);
     formData.append("name", form.name);
-    formData.append("price", Number(form.price).toString());
-    formData.append("capacity", Number(form.capacity).toString());
+    formData.append("price", form.price);
+    formData.append("capacity", form.capacity);
     formData.append("status", form.status);
-    formData.append("description", form.description);
-    formData.append("features", form.features);
+    formData.append("description", form.description || "");
+    formData.append("features", form.features || "");
     if (form.image) formData.append("image", form.image);
+    if (editingRoom) formData.append("_method", "PUT"); // ✅ لإرسال تحديث PUT
 
     if (editingRoom) {
       if (!hasPermission("rooms_edit")) return alert("🚫 ليس لديك صلاحية التعديل!");
@@ -201,11 +198,15 @@ const AdminRooms = () => {
               filtered.map((room) => (
                 <TableRow key={room.id}>
                   <TableCell>
-                    <img
-                      src={`http://localhost:8000/storage/${room.image_path}`}
-                      alt={room.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
+                    {room.image_path ? (
+                      <img
+                        src={`${BASE_URL}/storage/${room.image_path}`}
+                        alt={room.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <span>لا توجد صورة</span>
+                    )}
                   </TableCell>
                   <TableCell>{room.name}</TableCell>
                   <TableCell>{room.price} ريال</TableCell>
@@ -262,7 +263,6 @@ const AdminRooms = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* ✅ العنوان + زر الإضافة */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">إدارة الغرف</h1>
 
@@ -321,11 +321,24 @@ const AdminRooms = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">السعر (ريال)</Label>
-                      <Input id="price" type="number" value={form.price} onChange={handleChange} required />
+                      <Input
+                        id="price"
+                        type="number"
+                        value={form.price}
+                        onChange={handleChange}
+                        required
+                        min={0}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="capacity">عدد الأشخاص</Label>
-                      <Input id="capacity" type="number" value={form.capacity} onChange={handleChange} />
+                      <Input
+                        id="capacity"
+                        type="number"
+                        value={form.capacity}
+                        onChange={handleChange}
+                        min={1}
+                      />
                     </div>
                   </div>
 
@@ -342,9 +355,9 @@ const AdminRooms = () => {
                   <div>
                     <Label htmlFor="image">الصورة</Label>
                     <Input id="image" type="file" accept="image/*" onChange={handleFileChange} />
-                    {editingRoom?.image_path && (
+                    {editingRoom?.image_path && !form.image && (
                       <img
-                        src={`http://localhost:8000/storage/${editingRoom.image_path}`}
+                        src={`${BASE_URL}/storage/${editingRoom.image_path}`}
                         alt="Current"
                         className="w-24 h-24 object-cover mt-2 rounded"
                       />
@@ -363,7 +376,6 @@ const AdminRooms = () => {
           )}
         </div>
 
-        {/* ✅ التبويبات */}
         <Tabs defaultValue="غرف خاصة" dir="rtl" className="text-right">
           <TabsList className="grid grid-cols-5">
             {categories.map((cat) => (

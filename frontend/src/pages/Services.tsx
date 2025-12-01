@@ -75,7 +75,7 @@ const ServiceCard = ({
 const Services = () => {
   const { addItem } = useCart();
   const { user } = useAuthStore(); // ✅ الحصول على المستخدم
-  const categories = ["بقالة", "قهوة", "قات", "شيشة", "كروت"];
+  const categories = ["البقالة", "القات", "الشيشة", "الكروت", "القهوة"];
 
   // ✅ استخدام React Query لجلب المنتجات
   const {
@@ -95,8 +95,9 @@ const Services = () => {
     }
   }, [isError, error]);
 
-  const filterByCategory = (category: string) =>
-    products.filter((p) => p.category === category);
+const filterByCategory = (category: string) =>
+  products.filter((p) => p.type === category);
+
 
   // if (isLoading) {
   //   return (

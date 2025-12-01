@@ -1,8 +1,14 @@
 // src/api/rooms.ts
-import axios from "axios";
+import instance from "./axios"; // الاعتماد على axios instance
 
-const API_URL = "http://localhost:8000/api/rooms";
+// ================================
+// 📌 API الأساس
+// ================================
+const API_URL = "/api/rooms";
 
+// ================================
+// 📌 شكل بيانات الغرف
+// ================================
 export interface Room {
   id: number;
   category: string;
@@ -11,27 +17,48 @@ export interface Room {
   capacity: number;
   status: string;
   description: string;
-  features: string[];
+  features: string | string[];
   image_path?: string;
 }
 
+// ================================
 // 🟢 جلب كل الغرف
+// GET /api/rooms
+// ================================
 export const getRooms = async (): Promise<Room[]> => {
-  const { data } = await axios.get(API_URL);
+  const { data } = await instance.get(API_URL);
   return data;
 };
 
-// 🟢 تحديث الغرفة
+// ================================
+// ✏️ تحديث غرفة
+// PUT /api/rooms/{id} باستخدام _method=PUT
+// ================================
 export const updateRoom = async (id: number, formData: FormData) => {
-  return await axios.post(`${API_URL}/${id}?_method=PUT`, formData);
+  // إرسال formData مع _method=PUT
+  return await instance.post(`${API_URL}/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
 
-// 🟢 إنشاء غرفة
+// ================================
+// 🆕 إنشاء غرفة جديدة
+// POST /api/rooms
+// ================================
 export const createRoom = async (formData: FormData) => {
-  return await axios.post(API_URL, formData);
+  return await instance.post(API_URL, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
 
-// 🟢 حذف غرفة
+// ================================
+// 🔴 حذف غرفة
+// DELETE /api/rooms/{id}
+// ================================
 export const deleteRoom = async (id: number) => {
-  return await axios.delete(`${API_URL}/${id}`);
+  return await instance.delete(`${API_URL}/${id}`);
 };

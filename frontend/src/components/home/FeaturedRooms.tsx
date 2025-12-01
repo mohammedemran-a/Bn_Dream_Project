@@ -1,3 +1,4 @@
+// src/components/home/FeaturedRooms.tsx
 import { useQuery } from "@tanstack/react-query";
 import { getRooms, Room } from "@/api/rooms";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Users, Wifi, Coffee, Tv } from "lucide-react";
+import { BASE_URL } from "@/api/axios"; // استيراد BASE_URL
 
 const FeaturedRooms = () => {
   // جلب الغرف من API
@@ -42,7 +44,9 @@ const FeaturedRooms = () => {
                 <img
                   src={
                     room.image_path
-                      ? `http://localhost:8000/storage/${room.image_path}`
+                      ? room.image_path.startsWith("http")
+                        ? room.image_path
+                        : `${BASE_URL}/storage/${room.image_path}`
                       : "https://via.placeholder.com/800x600?text=No+Image"
                   }
                   alt={room.name}

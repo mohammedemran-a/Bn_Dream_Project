@@ -1,5 +1,5 @@
 // src/api/contacts.ts
-import axios from "./axios";
+import instance from "./axios"; // 🔥 استدعاء Axios instance بدل axios
 
 // ================================
 // 🔹 واجهة بيانات الرسالة المرسلة
@@ -8,8 +8,8 @@ export interface ContactMessage {
   name: string;
   email: string;
   message: string;
-  phone?: string;        // حقل اختياري
-  subject?: string;      // حقل اختياري
+  phone?: string;         // حقل اختياري
+  subject?: string;       // حقل اختياري
   attachments?: string[]; // لو فيه ملفات مرفقة
 }
 
@@ -37,7 +37,7 @@ export interface ApiResponse<T> {
 export const sendContactMessage = async (
   data: ContactMessage
 ): Promise<ApiResponse<ContactItem>> => {
-  const response = await axios.post<ApiResponse<ContactItem>>("/api/contact", data);
+  const response = await instance.post<ApiResponse<ContactItem>>("/api/contact", data);
   return response.data;
 };
 
@@ -45,6 +45,6 @@ export const sendContactMessage = async (
 // 🔹 جلب جميع الرسائل من Laravel
 // ================================
 export const getAllContacts = async (): Promise<ApiResponse<ContactItem[]>> => {
-  const response = await axios.get<ApiResponse<ContactItem[]>>("/api/contact");
+  const response = await instance.get<ApiResponse<ContactItem[]>>("/api/contact");
   return response.data;
 };

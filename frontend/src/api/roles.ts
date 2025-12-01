@@ -1,5 +1,5 @@
 // src/api/roles.ts
-import axios from "./axios";
+import instance from "./axios"; // 🔥 استدعاء Axios instance بدل axios
 
 export interface Role {
   id: number;
@@ -14,26 +14,41 @@ export interface PermissionItem {
   label: string;
 }
 
+// ================================
+// 🔹 جلب كل الأدوار
+// ================================
 export const getRoles = async (): Promise<Role[]> => {
-  const { data } = await axios.get("/api/roles");
+  const { data } = await instance.get("/api/roles");
   return data;
 };
 
+// ================================
+// 🔹 جلب جميع الصلاحيات
+// ================================
 export const getPermissions = async (): Promise<PermissionItem[]> => {
-  const { data } = await axios.get("/api/permissions");
+  const { data } = await instance.get("/api/permissions");
   return data;
 };
 
+// ================================
+// 🔹 إنشاء دور جديد
+// ================================
 export const createRole = async (role: { name: string; permissions: string[] }): Promise<Role> => {
-  const { data } = await axios.post("/api/roles", role);
+  const { data } = await instance.post("/api/roles", role);
   return data;
 };
 
+// ================================
+// 🔹 تحديث دور
+// ================================
 export const updateRole = async (id: number, role: { name: string; permissions: string[] }): Promise<Role> => {
-  const { data } = await axios.put(`/api/roles/${id}`, role);
+  const { data } = await instance.put(`/api/roles/${id}`, role);
   return data;
 };
 
+// ================================
+// 🔹 حذف دور
+// ================================
 export const deleteRole = async (id: number): Promise<void> => {
-  await axios.delete(`/api/roles/${id}`);
+  await instance.delete(`/api/roles/${id}`);
 };

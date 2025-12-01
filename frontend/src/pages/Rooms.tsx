@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/tabs";
 import { Users, Wifi, Coffee, Tv } from "lucide-react";
 import { getRooms, Room } from "@/api/rooms";
-import { createBooking } from "@/api/bookings.ts";
+import { createBooking } from "@/api/bookings";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/useAuthStore";
+import { BASE_URL } from "@/api/axios"; // ✅ استدعاء BASE_URL
 
 const RoomCard = ({ room }: { room: Room }) => {
   const queryClient = useQueryClient();
@@ -41,15 +42,14 @@ const RoomCard = ({ room }: { room: Room }) => {
   const [durationType, setDurationType] = useState<"hours" | "days">("days");
   const [durationValue, setDurationValue] = useState<number>(1);
 
-  // حالات الدفع
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "wallet">("cash");
   const [walletType, setWalletType] = useState<"جوالي" | "جيب" | "ون كاش" | null>(null);
   const [walletCode, setWalletCode] = useState("");
 
-  const totalPrice = durationType === "hours"
-  ? room.price * (durationValue / 24) // تحويل السعر من يوم إلى ساعة
-  : room.price * durationValue;
-
+  const totalPrice =
+    durationType === "hours"
+      ? room.price * (durationValue / 24)
+      : room.price * durationValue;
 
   const formatDate = (date: Date) =>
     date.toISOString().slice(0, 19).replace("T", " ");
@@ -63,7 +63,6 @@ const RoomCard = ({ room }: { room: Room }) => {
 
       const now = new Date();
       const checkOut = new Date(now);
-
       if (durationType === "hours") checkOut.setHours(now.getHours() + durationValue);
       else checkOut.setDate(now.getDate() + durationValue);
 
@@ -122,7 +121,7 @@ const RoomCard = ({ room }: { room: Room }) => {
           <img
             src={
               room.image_path
-                ? `http://localhost:8000/storage/${room.image_path}`
+                ? `${BASE_URL}/storage/${room.image_path}` // ✅ تعديل المسار
                 : "https://via.placeholder.com/800x600?text=No+Image"
             }
             alt={room.name}
@@ -226,13 +225,11 @@ const RoomCard = ({ room }: { room: Room }) => {
                 </div>
               </div>
 
-              {/* 🆕 سعر الحجز المباشر */}
               <div>
                 <Label>السعر الإجمالي</Label>
                 <p className="text-lg font-bold">{totalPrice} ريال</p>
               </div>
 
-              {/* اختيار طريقة الدفع */}
               <div>
                 <Label>طريقة الدفع</Label>
                 <Select
@@ -301,7 +298,7 @@ const RoomCard = ({ room }: { room: Room }) => {
   );
 };
 
-// باقي الصفحة بدون أي تعديل 👇
+// باقي الصفحة بدون تعديل
 const CategorySection = ({ title, rooms }: { title: string; rooms: Room[] }) => (
   <>
     <div className="mb-6 p-6 bg-card rounded-lg border">

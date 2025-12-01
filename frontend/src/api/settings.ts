@@ -1,36 +1,29 @@
-// src/api/settings.ts
-import axios, { AxiosResponse } from "axios";
-
-// رابط API
-const API_BASE_URL = "http://127.0.0.1:8000";
-const API_URL = `${API_BASE_URL}/api/settings`;
+import instance from "./axios"; // 🟢 استخدام axios instance وإنهاء التكرار
 
 // ===============================
-// 🔹 واجهة بيانات الإعدادات العامة
+// 🔹 واجهة الإعدادات العامة
 // ===============================
 export interface Settings {
   siteName?: string;
   logo?: File | string;
-  // مرونة للحقول الإضافية
-  [key: string]: string | number | boolean | File | null | undefined;
+  [key: string]: string | number | boolean | File | null | undefined; // مرونة
 }
 
 // ===============================
 // 🔹 جلب الإعدادات
+// GET /api/settings
 // ===============================
-export const getSettings = async (): Promise<AxiosResponse<Settings>> => {
-  return axios.get<Settings>(API_URL);
+export const getSettings = async () => {
+  return await instance.get<Settings>("/api/settings");
 };
 
 // ===============================
 // 🔹 تحديث الإعدادات
+// POST /api/settings
+// FormData (logo + siteName + المزيد)
 // ===============================
-export const updateSettings = async (
-  formData: FormData
-): Promise<AxiosResponse<Settings>> => {
-  return axios.post<Settings>(API_URL, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+export const updateSettings = async (formData: FormData) => {
+  return await instance.post<Settings>("/api/settings", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
 };

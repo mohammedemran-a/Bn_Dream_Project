@@ -1,15 +1,16 @@
 import axios from "axios";
 
+export const BASE_URL = "http://127.0.0.1:8000"; // ✅ هذا لتستخدمه في الصور
+
 const instance = axios.create({
-  baseURL: "http://127.0.0.1:8000", // تأكد أن نفس البورت المستخدم في Laravel
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // ✅ هذا مهم جدًا لـ Sanctum
+  withCredentials: true,
 });
 
-// ✅ إضافة Authorization تلقائيًا إذا كان التوكن موجودًا
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

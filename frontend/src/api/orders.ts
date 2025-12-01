@@ -1,4 +1,5 @@
-import axios from "./axios";
+// src/api/orders.ts
+import instance from "./axios"; // 🔥 استدعاء Axios instance بدل axios
 
 export interface OrderProduct {
   id: number;
@@ -16,32 +17,42 @@ export interface Order {
 
 const API_URL = "/api/orders";
 
-// جلب كل الطلبات
+// ================================
+// 🔹 جلب كل الطلبات
+// ================================
 export const getAllOrders = async (): Promise<Order[]> => {
-  const response = await axios.get(API_URL);
+  const response = await instance.get(API_URL);
   return response.data?.data || response.data || [];
 };
 
-// إنشاء طلب جديد
+// ================================
+// 🔹 إنشاء طلب جديد
+// ================================
 export const createOrder = async (orderData: unknown): Promise<Order> => {
-  const response = await axios.post(API_URL, orderData);
+  const response = await instance.post(API_URL, orderData);
   return response.data || {};
 };
 
-// تحديث حالة الطلب
+// ================================
+// 🔹 تحديث حالة الطلب
+// ================================
 export const updateOrderStatus = async (id: number, status: string): Promise<Order> => {
-  const response = await axios.put(`${API_URL}/${id}/status`, { status });
+  const response = await instance.put(`${API_URL}/${id}/status`, { status });
   return response.data || {};
 };
 
-// جلب طلب واحد
+// ================================
+// 🔹 جلب طلب واحد
+// ================================
 export const getOrder = async (id: number): Promise<Order> => {
-  const response = await axios.get(`${API_URL}/${id}`);
+  const response = await instance.get(`${API_URL}/${id}`);
   return response.data || {};
 };
 
-// حذف طلب
+// ================================
+// 🔹 حذف طلب
+// ================================
 export const deleteOrder = async (id: number): Promise<void> => {
-  const response = await axios.delete(`${API_URL}/${id}`);
+  const response = await instance.delete(`${API_URL}/${id}`);
   return response.data || {};
 };
