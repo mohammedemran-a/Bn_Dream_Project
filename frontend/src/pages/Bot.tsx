@@ -1,7 +1,7 @@
 // src/pages/Bot.jsx
 import React, { useState, useRef, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar"; // استيراد الشريط العلوي
-
+import BottomNav from "@/components/layout/BottomNav";
 // ✅ 1. تم إلغاء كل منطق وحالات إخفاء الشريط العلوي (Navbar)
 // لا يوجد isNavbarVisible أو useEffect الخاص بحركة الماوس
 
@@ -129,6 +129,7 @@ const Bot = () => {
           </div>
         </div>
       </main>
+      <BottomNav />
     </div>
   );
 };

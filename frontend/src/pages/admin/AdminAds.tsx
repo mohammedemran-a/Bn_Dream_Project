@@ -60,7 +60,7 @@ interface Ad {
   description: string;
   discount?: string | null;
   badge?: string | null;
-  image?: string | null; // may be path (ads/...) or full URL
+  image?: string | null;
   type: string;
   link: string;
   isActive: boolean;

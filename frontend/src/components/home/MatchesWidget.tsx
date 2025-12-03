@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMatches, Match as API_Match } from "@/api/football_matches";
 import { getUserPredictions, postPrediction } from "@/api/predictions";
 import { useAuthStore } from "@/store/useAuthStore";
+import { BASE_URL } from "@/api/axios"; // ✅ لجلب الشعارات
 
 export type Prediction = {
   match_id: number;
@@ -36,7 +37,7 @@ const MatchesWidget = () => {
     enabled: !!userId,
   });
 
-  // 🟢 مزامنة التوقعات مع البيانات المسترجعة من السيرفر بدون حلقة لا نهائية
+  // 🟢 مزامنة التوقعات مع السيرفر
   useEffect(() => {
     if (!userPredictions) return;
 
@@ -53,7 +54,7 @@ const MatchesWidget = () => {
     setPredictions((prev) => {
       const prevKeys = Object.keys(prev);
       const newKeys = Object.keys(initialPredictions);
-      // ✅ إذا لم تتغير القيم، لا نحدث state
+
       if (
         prevKeys.length === newKeys.length &&
         prevKeys.every(
@@ -65,6 +66,7 @@ const MatchesWidget = () => {
       ) {
         return prev;
       }
+
       return initialPredictions;
     });
   }, [userPredictions]);
@@ -84,7 +86,11 @@ const MatchesWidget = () => {
   });
 
   // ⚙️ تعديل التوقع
-  const handlePredictionChange = (matchId: number, team: "team1" | "team2", value: string) => {
+  const handlePredictionChange = (
+    matchId: number,
+    team: "team1" | "team2",
+    value: string
+  ) => {
     const currentPrediction: Prediction = predictions[matchId] ?? {
       match_id: matchId,
       team1: 0,
@@ -109,7 +115,8 @@ const MatchesWidget = () => {
 
     if (prediction.submitted) return alert(" لقد تم إرسال هذا التوقع مسبقًا");
 
-    if (!prediction.team1 && !prediction.team2) return alert("❌ الرجاء إدخال التوقعين");
+    if (!prediction.team1 && !prediction.team2)
+      return alert("❌ الرجاء إدخال التوقعين");
 
     predictionMutation.mutate({
       matchId,
@@ -130,7 +137,9 @@ const MatchesWidget = () => {
         <div className="text-center mb-16 space-y-4 animate-fade-in">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
             <Trophy className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">مباريات اليوم</span>
+            <span className="text-sm font-medium text-primary">
+              مباريات اليوم
+            </span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold">شارك بتوقعاتك</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -140,8 +149,15 @@ const MatchesWidget = () => {
 
         {/* Matches Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {isLoading && <p className="text-center col-span-3">جارٍ تحميل المباريات...</p>}
-          {isError && <p className="text-center col-span-3 text-red-500">حدث خطأ أثناء جلب المباريات.</p>}
+          {isLoading && (
+            <p className="text-center col-span-3">جارٍ تحميل المباريات...</p>
+          )}
+          {isError && (
+            <p className="text-center col-span-3 text-red-500">
+              حدث خطأ أثناء جلب المباريات.
+            </p>
+          )}
+
           {!isLoading &&
             !isError &&
             todayMatches.slice(0, 3).map((match, index) => {
@@ -151,6 +167,7 @@ const MatchesWidget = () => {
                 team2: 0,
                 submitted: false,
               };
+
               const isSubmitted = prediction.submitted;
 
               return (
@@ -160,16 +177,44 @@ const MatchesWidget = () => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <CardHeader>
-                    <Badge className="w-fit">{match.status || "قادمة"}</Badge>
-                    <CardTitle className="text-center text-xl mt-4">
-                      {match.team1} <span className="text-primary mx-2">VS</span> {match.team2}
+                    <Badge className="w-fit">
+                      {match.status || "قادمة"}
+                    </Badge>
+
+                    {/* ✅ عرض الشعارات + أسماء الفرق */}
+                    <CardTitle className="text-center text-xl mt-4 flex items-center justify-center gap-3">
+                      <div className="text-center">
+                        {match.team1_logo && (
+                          <img
+                            src={`${BASE_URL}/storage/${match.team1_logo}`}
+                            alt={match.team1}
+                            className="w-10 h-10 object-cover rounded-full mx-auto mb-1"
+                          />
+                        )}
+                        <span>{match.team1}</span>
+                      </div>
+
+                      <span className="text-primary mx-3">VS</span>
+
+                      <div className="text-center">
+                        {match.team2_logo && (
+                          <img
+                            src={`${BASE_URL}/storage/${match.team2_logo}`}
+                            alt={match.team2}
+                            className="w-10 h-10 object-cover rounded-full mx-auto mb-1"
+                          />
+                        )}
+                        <span>{match.team2}</span>
+                      </div>
                     </CardTitle>
                   </CardHeader>
+
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       <span>{match.time}</span>
                     </div>
+
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
                       <span>{match.channel}</span>
@@ -183,7 +228,13 @@ const MatchesWidget = () => {
                         value={prediction.team1}
                         min={0}
                         disabled={isSubmitted}
-                        onChange={(e) => handlePredictionChange(match.id!, "team1", e.target.value)}
+                        onChange={(e) =>
+                          handlePredictionChange(
+                            match.id!,
+                            "team1",
+                            e.target.value
+                          )
+                        }
                       />
                       <span className="text-2xl font-bold text-primary">-</span>
                       <input
@@ -192,7 +243,13 @@ const MatchesWidget = () => {
                         value={prediction.team2}
                         min={0}
                         disabled={isSubmitted}
-                        onChange={(e) => handlePredictionChange(match.id!, "team2", e.target.value)}
+                        onChange={(e) =>
+                          handlePredictionChange(
+                            match.id!,
+                            "team2",
+                            e.target.value
+                          )
+                        }
                       />
                     </div>
 
@@ -211,7 +268,10 @@ const MatchesWidget = () => {
         </div>
 
         {/* View All Button */}
-        <div className="text-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
+        <div
+          className="text-center animate-fade-in"
+          style={{ animationDelay: "0.4s" }}
+        >
           <Link to="/matches">
             <Button size="lg" className="shadow-elegant">
               <Trophy className="h-5 w-5 ml-2" />

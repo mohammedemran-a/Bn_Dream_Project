@@ -10,6 +10,7 @@ import {
   Phone,
   Settings,
   User,
+  Bot,
   LogOut,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -38,6 +39,7 @@ const Navbar = () => {
     { name: "الغرف", path: "/rooms", icon: DoorOpen },
     { name: "الخدمات", path: "/services", icon: Briefcase },
     { name: "المباريات", path: "/matches", icon: Trophy },
+    { name: "البوت", path: "/bot", icon: Bot },
     { name: "تواصل معنا", path: "/contact", icon: Phone },
     {
       name: "لوحة التحكم",
@@ -71,7 +73,7 @@ const Navbar = () => {
               />
             </div>
             <span className="text-base sm:text-xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent hidden sm:inline-block">
-              نظام استراحة بي إن إيدريم
+              نظام استراحة بي إن دريم
             </span>
             <span className="text-sm font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent sm:hidden">
               بي إن إيدريم

@@ -1,6 +1,7 @@
 // src/pages/Rooms.tsx
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import BottomNav from "@/components/layout/BottomNav";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import {
@@ -385,6 +386,7 @@ const Rooms = () => {
         </section>
       </main>
       <Footer />
+      <BottomNav />
     </div>
   );
 };

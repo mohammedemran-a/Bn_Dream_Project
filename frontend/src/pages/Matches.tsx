@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import BottomNav from "@/components/layout/BottomNav";
 import {
   Card,
   CardContent,
@@ -364,8 +365,8 @@ const Matches = () => {
           </div>
         </section>
       </main>
-
       <Footer />
+      <BottomNav />
     </div>
   );
 };

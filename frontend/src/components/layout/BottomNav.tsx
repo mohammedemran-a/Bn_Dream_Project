@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, DoorOpen, Briefcase, Trophy, User } from "lucide-react";
+import { Home, DoorOpen, Briefcase, Trophy, Bot } from "lucide-react";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -9,6 +9,7 @@ const BottomNav = () => {
     { name: "الغرف", path: "/rooms", icon: DoorOpen },
     { name: "الخدمات", path: "/services", icon: Briefcase },
     { name: "المباريات", path: "/matches", icon: Trophy },
+    { name: "البوت", path: "/bot", icon: Bot },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -29,7 +29,11 @@ const menuItems = [
   { icon: Settings, label: "الإعدادات", path: "/admin/settings" },
 ];
 
-export const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onNavigate?: () => void;
+}
+
+export const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
   const location = useLocation();
 
   return (
@@ -49,6 +53,7 @@ export const AdminSidebar = () => {
             <Link
               key={item.path}
               to={item.path}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300",
                 "hover:bg-accent/10 hover:translate-x-[-4px]",

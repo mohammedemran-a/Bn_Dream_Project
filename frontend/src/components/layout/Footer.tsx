@@ -6,7 +6,7 @@ import { getSettings } from "@/api/settings.js";
 const Footer = () => {
   // حالة لتخزين الإعدادات مع قيم افتراضية
   const [settings, setSettings] = useState({
-    siteName: "نظام استراحة بي إن إيدريم",
+    siteName: "نظام استراحة بي إن دريم",
     siteDescription: "استمتع بأفضل تجربة للراحة والفخامة مع خدماتنا المتميزة وغرفنا العصرية المصممة لتوفر لك تجربة لا تنسى.",
     logo: "",
     phone: "",

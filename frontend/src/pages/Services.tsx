@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import BottomNav from "@/components/layout/BottomNav";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
@@ -174,6 +175,7 @@ const filterByCategory = (category: string) =>
         </section>
       </main>
       <Footer />
+      <BottomNav />
     </div>
   );
 };
