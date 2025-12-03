@@ -73,7 +73,7 @@ const Navbar = () => {
               />
             </div>
             <span className="text-base sm:text-xl font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent hidden sm:inline-block">
-              نظام استراحة بي إن دريم
+              نادي واستراحة بي إن دريم
             </span>
             <span className="text-sm font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent sm:hidden">
               بي إن إيدريم

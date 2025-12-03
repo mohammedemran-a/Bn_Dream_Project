@@ -26,7 +26,7 @@ const HeroSection = () => {
           {/* العنوان الرئيسي الجديد */}
           <h1 className="text-5xl md:text-7xl font-bold leading-tight animate-fade-in">
             <span className="bg-gradient-to-l from-primary via-accent to-primary bg-clip-text text-transparent">
-              استراحة بي إن دريم
+              نادي واستراحة بي إن دريم
             </span>
             <br />
             <span className="text-foreground text-2xl md:text-4xl">
