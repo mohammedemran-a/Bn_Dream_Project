@@ -68,7 +68,6 @@ interface Ad {
 }
 
 const adTypes = [
-  { value: "hot", label: "عرض ساخن", icon: Percent },
   { value: "new", label: "جديد", icon: Gift },
   { value: "featured", label: "مميز", icon: Star },
   { value: "gaming", label: "ألعاب", icon: Sparkles },
