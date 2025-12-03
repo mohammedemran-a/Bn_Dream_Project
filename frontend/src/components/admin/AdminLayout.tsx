@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Navbar from "@/components/layout/Navbar";
 import { AdminSidebar } from "./AdminSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -16,34 +17,47 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 flex items-center gap-4 border-b border-border bg-card px-4 py-3">
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0">
-              <AdminSidebar onNavigate={() => setOpen(false)} />
-            </SheetContent>
-          </Sheet>
-          <h2 className="text-lg font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
-            لوحة التحكم
-          </h2>
-        </header>
-        <main className="p-4 overflow-auto">
-          {children}
-        </main>
+        {/* ✅ Navbar */}
+        <Navbar />
+
+        {/* ✅ تعويض ارتفاع الـ Navbar */}
+        <div className="pt-16">
+          <header className="sticky top-0 z-40 flex items-center gap-4 border-b border-border bg-card px-4 py-3">
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 p-0">
+                <AdminSidebar onNavigate={() => setOpen(false)} />
+              </SheetContent>
+            </Sheet>
+            <h2 className="text-lg font-bold bg-gradient-to-l from-primary to-accent bg-clip-text text-transparent">
+              لوحة التحكم
+            </h2>
+          </header>
+
+          <main className="p-4 overflow-auto">
+            {children}
+          </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
-      <main className="flex-1 p-8 overflow-auto">
-        {children}
-      </main>
+    <div className="min-h-screen bg-background">
+      {/* ✅ Navbar */}
+      <Navbar />
+
+      {/* ✅ تعويض ارتفاع الـ Navbar */}
+      <div className="flex pt-16">
+        <AdminSidebar />
+        <main className="flex-1 p-8 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
