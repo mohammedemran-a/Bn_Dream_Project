@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PredictionController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\AdController;
 
 Route::post('/predictions', [PredictionController::class, 'store']);
 Route::get('/predictions/user/{user_id}', [PredictionController::class, 'getUserPredictions']);
@@ -90,4 +91,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::delete('/notifications', [NotificationController::class, 'clearAll']);
+});
+
+
+
+Route::prefix('ads')->group(function () {
+
+    Route::get('/',              [AdController::class, 'index']);    // جميع الإعلانات
+    Route::post('/',             [AdController::class, 'store']);    // إنشاء إعلان
+    Route::post('/{id}',         [AdController::class, 'update']);   // تحديث إعلان
+    Route::delete('/{id}',       [AdController::class, 'destroy']);  // حذف إعلان
+    Route::patch('/{id}/toggle', [AdController::class, 'toggle']);   // تفعيل / إيقاف
 });
