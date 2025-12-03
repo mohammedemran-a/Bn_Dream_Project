@@ -1,10 +1,12 @@
-import instance from "./axios"; // 🔥 استدعاء axios instance بدل axios
+import instance from "./axios";
 
 // 🧩 نوع المباراة
 export interface Match {
   id?: number;
   team1: string;
   team2: string;
+  team1_logo?: File | string | null;
+  team2_logo?: File | string | null;
   date: string;
   time: string;
   channel: string;
@@ -12,7 +14,6 @@ export interface Match {
   status: "قادمة" | "جارية" | "منتهية";
 }
 
-// رابط API الأساسي
 const API_URL = "/api/football-matches";
 
 // 🟢 جلب كل المباريات
@@ -27,14 +28,19 @@ export const getMatch = async (id: number) => {
   return response.data;
 };
 
-// 🟢 إنشاء مباراة جديدة
-export const createMatch = async (data: Omit<Match, "id">) => {
-  return await instance.post(API_URL, data);
+// 🟢 إنشاء مباراة جديدة + رفع الشعارات
+export const createMatch = async (formData: FormData) => {
+  return await instance.post(API_URL, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 };
 
-// ✏️ تحديث مباراة
-export const updateMatch = async (id: number, data: Partial<Match>) => {
-  return await instance.post(`${API_URL}/${id}?_method=PUT`, data);
+// ✏️ تحديث مباراة + رفع الشعارات
+export const updateMatch = async (id: number, formData: FormData) => {
+  formData.append("_method", "PUT"); // لأن Laravel يحتاج method spoofing
+  return await instance.post(`${API_URL}/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 };
 
 // 🔴 حذف مباراة

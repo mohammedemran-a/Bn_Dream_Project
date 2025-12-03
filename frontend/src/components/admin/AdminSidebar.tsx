@@ -10,6 +10,8 @@ import {
   Shield,
   Bell,
   Settings,
+  LogOut,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +22,7 @@ const menuItems = [
   { icon: ShoppingBag, label: "إدارة الخدمات", path: "/admin/services" },
   { icon: ShoppingCart, label: "الطلبات الواردة", path: "/admin/orders" },
   { icon: Trophy, label: "إدارة المباريات", path: "/admin/matches" },
+  { icon: Megaphone, label: "إدارة الإعلانات", path: "/admin/ads" },
   { icon: Users, label: "إدارة المستخدمين", path: "/admin/users" },
   { icon: Shield, label: "الأدوار والصلاحيات", path: "/admin/roles" },
   { icon: Bell, label: "الإشعارات", path: "/admin/notifications" },
@@ -58,6 +61,12 @@ export const AdminSidebar = () => {
           );
         })}
         
+        <button
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-destructive/10 hover:text-destructive text-muted-foreground mt-8"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">تسجيل الخروج</span>
+        </button>
       </nav>
     </aside>
   );

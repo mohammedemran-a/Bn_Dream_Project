@@ -35,6 +35,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 // الحماية
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import GuestRoute from "@/components/auth/GuestRoute";
+import AdminAds from "./pages/admin/AdminAds";
 
 const queryClient = new QueryClient();
 
@@ -182,6 +183,15 @@ const App = () => {
                   element={
                     <ProtectedRoute>
                       <AdminMatches />
+                    </ProtectedRoute>
+                  }
+                  
+                />
+                <Route
+                  path="/admin/ads"
+                  element={
+                    <ProtectedRoute>
+                      <AdminAds />
                     </ProtectedRoute>
                   }
                 />

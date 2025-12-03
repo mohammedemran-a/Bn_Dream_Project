@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
              $table->string('team1'); 
             $table->string('team2'); 
+            $table->string('team1_logo')->nullable();
+            $table->string('team2_logo')->nullable();
             $table->date('date');    
             $table->time('time');    
             $table->string('channel'); 

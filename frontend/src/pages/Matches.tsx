@@ -15,6 +15,7 @@ import { Trophy, Clock, Calendar, Tv } from "lucide-react";
 import { getLeaderboard, getUserPredictions, postPrediction } from "@/api/predictions.ts";
 import { getMatches, Match as API_Match } from "@/api/football_matches.ts";
 import { useAuthStore } from "@/store/useAuthStore";
+import { BASE_URL } from "@/api/axios"; // تأكد من استيراد BASE_URL
 
 export type Match = API_Match;
 
@@ -45,11 +46,11 @@ const Matches = () => {
     queryFn: getMatches,
   });
 
-  // 🟢 جلب توقعات المستخدم (لن تعمل حتى يتوفر userId)
+  // 🟢 جلب توقعات المستخدم
   const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery({
     queryKey: ["userPredictions", userId],
     queryFn: () => getUserPredictions(userId!),
-    enabled: !!userId, // ✅ هنا نوقف التنفيذ مؤقتاً
+    enabled: !!userId,
   });
 
   // 🟢 جلب المتصدرين
@@ -103,7 +104,7 @@ const Matches = () => {
     const prediction = predictions[matchId];
     if (!prediction) return alert("❌ لم يتم إدخال أي توقع");
 
-    if (prediction.submitted) return alert(" لقد تم إرسال هذا التوقع مسبقًا");
+    if (prediction.submitted) return alert("لقد تم إرسال هذا التوقع مسبقًا");
 
     if (!prediction.team1 && !prediction.team2) {
       return alert("❌ الرجاء إدخال التوقعين قبل الإرسال");
@@ -121,11 +122,9 @@ const Matches = () => {
     });
   };
 
-  // ⚙️ حالة التحميل
   const loading =
     loadingMatches || loadingLeaderboard || (userId && loadingPredictions);
 
-  // 🟡 أثناء تحميل المستخدم من الستور
   if (!userId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -136,18 +135,6 @@ const Matches = () => {
     );
   }
 
-  // // 🟡 أثناء تحميل البيانات
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <p className="text-lg text-muted-foreground animate-pulse">
-  //         جاري تحميل البيانات...
-  //       </p>
-  //     </div>
-  //   );
-  // }
-
-  // ✅ عرض الصفحة بعد تحميل كل البيانات
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -205,9 +192,27 @@ const Matches = () => {
                           </div>
                         </div>
 
-                        <CardTitle className="text-center text-2xl">
+                        <CardTitle className="text-center text-2xl flex items-center justify-center gap-3">
+                          {/* شعار الفريق الأول */}
+                          {match.team1_logo && (
+                            <img
+                              src={`${BASE_URL}/storage/${match.team1_logo}`}
+                              alt={match.team1}
+                              className="w-10 h-10 object-cover rounded-full"
+                            />
+                          )}
                           {match.team1}
+
                           <span className="text-primary mx-3">VS</span>
+
+                          {/* شعار الفريق الثاني */}
+                          {match.team2_logo && (
+                            <img
+                              src={`${BASE_URL}/storage/${match.team2_logo}`}
+                              alt={match.team2}
+                              className="w-10 h-10 object-cover rounded-full"
+                            />
+                          )}
                           {match.team2}
                         </CardTitle>
 
@@ -231,6 +236,13 @@ const Matches = () => {
 
                           <div className="flex items-center gap-3 justify-center">
                             <div className="text-center">
+                              {match.team1_logo && (
+                                <img
+                                  src={`${BASE_URL}/storage/${match.team1_logo}`}
+                                  alt={match.team1}
+                                  className="w-8 h-8 object-cover rounded-full mx-auto mb-1"
+                                />
+                              )}
                               <p className="text-sm text-muted-foreground mb-2">
                                 {match.team1}
                               </p>
@@ -254,6 +266,13 @@ const Matches = () => {
                             <div className="text-2xl font-bold text-primary">-</div>
 
                             <div className="text-center">
+                              {match.team2_logo && (
+                                <img
+                                  src={`${BASE_URL}/storage/${match.team2_logo}`}
+                                  alt={match.team2}
+                                  className="w-8 h-8 object-cover rounded-full mx-auto mb-1"
+                                />
+                              )}
                               <p className="text-sm text-muted-foreground mb-2">
                                 {match.team2}
                               </p>

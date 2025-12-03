@@ -11,6 +11,8 @@ class FootballMatch extends Model
     protected $fillable = [
         'team1',
         'team2',
+        'team1_logo',
+        'team2_logo',
         'date',
         'time',
         'channel',
