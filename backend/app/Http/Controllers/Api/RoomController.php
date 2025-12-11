@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-
+    
 class RoomController extends Controller
 {
     /**
@@ -14,7 +14,8 @@ class RoomController extends Controller
      */
     public function index()
     {
-        return response()->json(Room::all());
+        $rooms = Room::all(); // الحقل remaining_capacity يظهر تلقائياً من الـ Model
+        return response()->json($rooms);
     }
 
     /**
@@ -22,7 +23,8 @@ class RoomController extends Controller
      */
     public function show($id)
     {
-        return response()->json(Room::findOrFail($id));
+        $room = Room::findOrFail($id); // الحقل remaining_capacity يظهر تلقائياً
+        return response()->json($room);
     }
 
     /**
@@ -38,11 +40,10 @@ class RoomController extends Controller
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'features' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', // 10 MB
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
         ]);
 
         if ($request->hasFile('image')) {
-            // حفظ الصورة داخل storage/app/public/rooms
             $path = $request->file('image')->store('rooms', 'public');
             $validated['image_path'] = $path;
         }
@@ -67,16 +68,13 @@ class RoomController extends Controller
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'features' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', // 10 MB
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
         ]);
 
         if ($request->hasFile('image')) {
-            // حذف الصورة القديمة إن وجدت
             if ($room->image_path && Storage::disk('public')->exists($room->image_path)) {
                 Storage::disk('public')->delete($room->image_path);
             }
-
-            // رفع الصورة الجديدة
             $path = $request->file('image')->store('rooms', 'public');
             $validated['image_path'] = $path;
         }
@@ -93,7 +91,6 @@ class RoomController extends Controller
     {
         $room = Room::findOrFail($id);
 
-        // حذف الصورة من التخزين إذا كانت موجودة
         if ($room->image_path && Storage::disk('public')->exists($room->image_path)) {
             Storage::disk('public')->delete($room->image_path);
         }

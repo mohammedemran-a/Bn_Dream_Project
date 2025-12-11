@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Room;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use App\Models\User;
 use App\Notifications\NewBookingNotification;
 use App\Notifications\BookingConfirmedNotification;
@@ -14,8 +13,7 @@ use App\Notifications\BookingConfirmedNotification;
 class BookingController extends Controller
 {
     /**
-     * 🟢 index:
-     * عرض جميع الحجوزات (مع إمكانية التصفية حسب الحالة).
+     * عرض جميع الحجوزات (مع التصفية)
      */
     public function index(Request $request)
     {
@@ -31,10 +29,7 @@ class BookingController extends Controller
     }
 
     /**
-     * 🟡 store:
-     * إنشاء حجز جديد.
-     * عند الإنشاء، يتم تغيير حالة الغرفة إلى "محجوز".
-     * تمت إضافة دعم لطريقة الدفع (نقداً / محفظة).
+     * إنشاء حجز جديد (مع حساب السعة)
      */
     public function store(Request $request)
     {
@@ -45,17 +40,15 @@ class BookingController extends Controller
             'check_out' => 'required|date|after:check_in',
             'guests' => 'required|integer|min:1',
             'total_price' => 'required|numeric|min:0',
-            'status' => 'nullable|string', // يمكن أن يكون "قيد المراجعة" أو "مؤكد"
+            'status' => 'nullable|string',
             'duration_type' => 'required|in:hours,days',
             'duration_value' => 'required|integer|min:1',
-
-            // 🆕 الحقول الجديدة الخاصة بالدفع
             'payment_method' => 'required|in:cash,wallet',
             'wallet_type' => 'nullable|in:جوالي,جيب,ون كاش',
             'wallet_code' => 'nullable|string|max:255',
         ]);
 
-        // ✅ التحقق من متطلبات الدفع بالمحفظة
+        // التحقق من الدفع بالمحفظة
         if ($validated['payment_method'] === 'wallet') {
             if (empty($validated['wallet_type']) || empty($validated['wallet_code'])) {
                 return response()->json([
@@ -64,7 +57,25 @@ class BookingController extends Controller
             }
         }
 
-        // ✅ إنشاء الحجز
+        // جلب الغرفة
+        $room = Room::findOrFail($validated['room_id']);
+
+        // -------------------------------
+        // 🔥 حساب السعة والحجوزات النشطة
+        // -------------------------------
+        $activeGuests = Booking::where('room_id', $room->id)
+            ->whereNotIn('status', ['ملغى', 'منتهي'])
+            ->sum('guests');
+
+        $newTotalGuests = $activeGuests + $validated['guests'];
+
+        if ($newTotalGuests > $room->capacity) {
+            return response()->json([
+                'message' => 'عدد الأشخاص أكبر من السعة المتاحة حالياً.'
+            ], 422);
+        }
+
+        // إنشاء الحجز
         $booking = Booking::create([
             'user_id' => $validated['user_id'],
             'room_id' => $validated['room_id'],
@@ -75,18 +86,23 @@ class BookingController extends Controller
             'status' => $validated['status'] ?? 'قيد المراجعة',
             'duration_type' => $validated['duration_type'],
             'duration_value' => $validated['duration_value'],
-
-            // 🆕 تخزين بيانات الدفع
             'payment_method' => $validated['payment_method'],
             'wallet_type' => $validated['wallet_type'] ?? null,
             'wallet_code' => $validated['wallet_code'] ?? null,
         ]);
 
-        // 🔁 تحديث حالة الغرفة إلى "محجوزة"
-        $room = Room::findOrFail($validated['room_id']);
-        $room->status = 'محجوز';
+        // -------------------------------
+        // 🔥 تحديث حالة الغرفة حسب السعة
+        // -------------------------------
+        if ($newTotalGuests >= $room->capacity) {
+            $room->status = 'محجوز';
+        } else {
+            $room->status = 'متاح';
+        }
+
         $room->save();
 
+        // إشعار الأدمن
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
             $admin->notify(new NewBookingNotification($booking));
@@ -99,8 +115,7 @@ class BookingController extends Controller
     }
 
     /**
-     * 🔵 show:
-     * عرض تفاصيل حجز واحد.
+     * عرض حجز
      */
     public function show(string $id)
     {
@@ -109,61 +124,65 @@ class BookingController extends Controller
     }
 
     /**
-     * 🟠 update:
-     * تحديث بيانات الحجز، بما في ذلك الحالة.
-     * إذا تم الإلغاء أو الانتهاء، يتم إعادة الغرفة إلى "متاح".
+     * تحديث حجز (مع تعديل السعة والحالة)
      */
-public function update(Request $request, string $id)
-{
-    $booking = Booking::findOrFail($id);
+    public function update(Request $request, string $id)
+    {
+        $booking = Booking::findOrFail($id);
+        $oldStatus = $booking->status;
 
-    // ✅ احفظ الحالة القديمة قبل التحديث
-    $oldStatus = $booking->status;
+        $booking->update($request->all());
 
-    // ✅ حدث بيانات الحجز
-    $booking->update($request->all());
-
-    // ✅ التعامل مع حالة الغرفة
-    if (isset($request->status)) {
         $room = $booking->room;
 
-        if (in_array($request->status, ['ملغى', 'منتهي'])) {
-            $room->status = 'متاح';
-        } elseif (in_array($request->status, ['مؤكد', 'قيد المراجعة'])) {
+        // -------------------------------
+        // 🔥 إعادة حساب الضيوف لكل الحجوزات النشطة بعد التحديث
+        // -------------------------------
+        $activeGuests = Booking::where('room_id', $room->id)
+            ->whereNotIn('status', ['ملغى', 'منتهي'])
+            ->sum('guests');
+
+        if ($activeGuests >= $room->capacity) {
             $room->status = 'محجوز';
+        } else {
+            $room->status = 'متاح';
         }
 
         $room->save();
-    }
 
-    // 🟢 إرسال إشعار إذا تغيرت الحالة إلى "مؤكد"
-    if (isset($request->status) && $request->status === 'مؤكد' && $oldStatus !== 'مؤكد') {
-        $booking->user->notify(new BookingConfirmedNotification($booking));
-    }
+        // إشعار بتأكيد الحجز
+        if ($request->status === 'مؤكد' && $oldStatus !== 'مؤكد') {
+            $booking->user->notify(new BookingConfirmedNotification($booking));
+        }
 
-    return response()->json([
-        'message' => 'تم تحديث بيانات الحجز بنجاح',
-        'booking' => $booking
-    ]);
-}
+        return response()->json([
+            'message' => 'تم تحديث بيانات الحجز بنجاح',
+            'booking' => $booking
+        ]);
+    }
 
     /**
-     * 🔴 destroy:
-     * حذف حجز من قاعدة البيانات.
-     * عند الحذف، تعود الغرفة متاحة تلقائيًا.
+     * حذف حجز (وإعادة السعة)
      */
     public function destroy(string $id)
     {
         $booking = Booking::findOrFail($id);
-
         $room = $booking->room;
+
         $booking->delete();
 
-        // إعادة الغرفة متاحة
-        if ($room) {
+        // إعادة حساب السعة بعد الحذف
+        $activeGuests = Booking::where('room_id', $room->id)
+            ->whereNotIn('status', ['ملغى', 'منتهي'])
+            ->sum('guests');
+
+        if ($activeGuests >= $room->capacity) {
+            $room->status = 'محجوز';
+        } else {
             $room->status = 'متاح';
-            $room->save();
         }
+
+        $room->save();
 
         return response()->json([
             'message' => 'تم حذف الحجز بنجاح'

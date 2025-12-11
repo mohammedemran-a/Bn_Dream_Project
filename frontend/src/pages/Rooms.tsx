@@ -42,7 +42,7 @@ const RoomCard = ({ room }: { room: Room }) => {
   const [showModal, setShowModal] = useState(false);
   const [durationType, setDurationType] = useState<"hours" | "days">("days");
   const [durationValue, setDurationValue] = useState<number>(1);
-
+  const [guests, setGuests] = useState<number>(1);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "wallet">("cash");
   const [walletType, setWalletType] = useState<"جوالي" | "جيب" | "ون كاش" | null>(null);
   const [walletCode, setWalletCode] = useState("");
@@ -62,6 +62,16 @@ const RoomCard = ({ room }: { room: Room }) => {
         throw new Error("User not logged in");
       }
 
+      if (guests <= 0) {
+        toast.error("⚠️ عدد الأشخاص غير صالح");
+        return;
+      }
+
+      if (guests > room.remaining_capacity) {
+        toast.error(`⚠️ الحد الأقصى للأشخاص المتبقي: ${room.remaining_capacity}`);
+        return;
+      }
+
       const now = new Date();
       const checkOut = new Date(now);
       if (durationType === "hours") checkOut.setHours(now.getHours() + durationValue);
@@ -72,7 +82,7 @@ const RoomCard = ({ room }: { room: Room }) => {
         room_id: room.id,
         check_in: formatDate(now),
         check_out: formatDate(checkOut),
-        guests: room.capacity,
+        guests: guests,
         total_price: totalPrice,
         status: "قيد المراجعة",
         duration_type: durationType,
@@ -99,15 +109,14 @@ const RoomCard = ({ room }: { room: Room }) => {
     onError: () => toast.error("⚠️ حدث خطأ أثناء تنفيذ الحجز."),
   });
 
-  // ✅ التعديل هنا فقط
   const handleOpenModal = () => {
     if (!user) {
       toast.error("⚠️ يرجى تسجيل الدخول أولاً");
       return;
     }
 
-    if (room.status === "محجوز") {
-      toast.error("❌ هذه الغرفة محجوزة بالفعل.");
+    if (room.remaining_capacity === 0) {
+      toast.error("❌ هذه الغرفة مكتملة الحجز.");
       return;
     }
 
@@ -137,10 +146,12 @@ const RoomCard = ({ room }: { room: Room }) => {
           />
           <Badge
             className={`absolute top-4 right-4 ${
-              room.status === "متاح" ? "bg-green-500" : "bg-red-500"
+              room.remaining_capacity > 0 ? "bg-green-500" : "bg-red-500"
             }`}
           >
-            {room.status}
+            {room.remaining_capacity > 0
+              ? `متاح (${room.remaining_capacity} متبقي)`
+              : "محجوزة"}
           </Badge>
         </div>
 
@@ -188,14 +199,14 @@ const RoomCard = ({ room }: { room: Room }) => {
         <CardFooter>
           <Button
             className={`w-full shadow-elegant ${
-              room.status === "محجوز"
+              room.remaining_capacity === 0
                 ? "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                 : ""
             }`}
             onClick={handleOpenModal}
-            disabled={room.status === "محجوز" || bookingMutation.isPending}
+            disabled={room.remaining_capacity === 0 || bookingMutation.isPending}
           >
-            {room.status === "محجوز"
+            {room.remaining_capacity === 0
               ? "محجوزة"
               : bookingMutation.isPending
               ? "جاري الحجز..."
@@ -207,8 +218,22 @@ const RoomCard = ({ room }: { room: Room }) => {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md relative">
-            <h4 className="text-lg font-bold mb-4">تأكيد الحجز: {room.name}</h4>
+            <h4 className="text-lg font-bold mb-4">
+              تأكيد الحجز: {room.name}
+            </h4>
+
             <div className="space-y-4">
+              <div>
+                <Label>عدد الأشخاص (الحد الأقصى: {room.remaining_capacity})</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={room.remaining_capacity}
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                />
+              </div>
+
               <div>
                 <Label>المدة</Label>
                 <div className="flex gap-2">
@@ -310,7 +335,6 @@ const RoomCard = ({ room }: { room: Room }) => {
   );
 };
 
-// باقي الصفحة بدون تعديل
 const CategorySection = ({ title, rooms }: { title: string; rooms: Room[] }) => (
   <>
     <div className="mb-6 p-6 bg-card rounded-lg border">

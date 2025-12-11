@@ -19,6 +19,9 @@ export interface Room {
   description: string;
   features: string | string[];
   image_path?: string;
+
+  // ✅ حقل السعة المتبقية المحسوب من الـ backend
+  remaining_capacity: number;
 }
 
 // ================================

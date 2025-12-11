@@ -54,7 +54,7 @@ const Navbar = () => {
   const logoSrc =
     settings.logo instanceof File
       ? URL.createObjectURL(settings.logo)
-      : settings.logo || "/BN_dream.png";
+      : settings.logo || "/Bein_dream.jpg";
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
