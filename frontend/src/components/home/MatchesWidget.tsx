@@ -8,7 +8,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMatches, Match as API_Match } from "@/api/football_matches";
 import { getUserPredictions, postPrediction } from "@/api/predictions";
 import { useAuthStore } from "@/store/useAuthStore";
-import { BASE_URL } from "@/api/axios"; // ✅ لجلب الشعارات
+import { BASE_URL } from "@/api/axios";
+import { toast } from "sonner"; // ✅ استدعاء toast
 
 export type Prediction = {
   match_id: number;
@@ -82,6 +83,10 @@ const MatchesWidget = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userPredictions", userId] });
+      toast.success("✅ تم إرسال التوقع بنجاح");
+    },
+    onError: () => {
+      toast.error("❌ حدث خطأ أثناء إرسال التوقع");
     },
   });
 
@@ -108,15 +113,15 @@ const MatchesWidget = () => {
 
   // ⚙️ إرسال التوقع
   const handleSubmitPrediction = (matchId: number) => {
-    if (!userId) return alert("🚫 يجب تسجيل الدخول أولاً");
+    if (!userId) return toast.error("🚫 يجب تسجيل الدخول أولاً");
 
     const prediction = predictions[matchId];
-    if (!prediction) return alert("❌ لم يتم إدخال أي توقع");
+    if (!prediction) return toast.error("❌ لم يتم إدخال أي توقع");
 
-    if (prediction.submitted) return alert(" لقد تم إرسال هذا التوقع مسبقًا");
+    if (prediction.submitted) return toast.error("لقد تم إرسال هذا التوقع مسبقًا");
 
     if (!prediction.team1 && !prediction.team2)
-      return alert("❌ الرجاء إدخال التوقعين");
+      return toast.error("❌ الرجاء إدخال التوقعين");
 
     predictionMutation.mutate({
       matchId,
@@ -181,7 +186,6 @@ const MatchesWidget = () => {
                       {match.status || "قادمة"}
                     </Badge>
 
-                    {/* ✅ عرض الشعارات + أسماء الفرق */}
                     <CardTitle className="text-center text-xl mt-4 flex items-center justify-center gap-3">
                       <div className="text-center">
                         {match.team1_logo && (
@@ -268,10 +272,7 @@ const MatchesWidget = () => {
         </div>
 
         {/* View All Button */}
-        <div
-          className="text-center animate-fade-in"
-          style={{ animationDelay: "0.4s" }}
-        >
+        <div className="text-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
           <Link to="/matches">
             <Button size="lg" className="shadow-elegant">
               <Trophy className="h-5 w-5 ml-2" />
