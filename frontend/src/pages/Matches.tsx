@@ -16,7 +16,7 @@ import { Trophy, Clock, Calendar, Tv } from "lucide-react";
 import { getLeaderboard, getUserPredictions, postPrediction } from "@/api/predictions.ts";
 import { getMatches, Match as API_Match } from "@/api/football_matches.ts";
 import { useAuthStore } from "@/store/useAuthStore";
-import { BASE_URL } from "@/api/axios"; // تأكد من استيراد BASE_URL
+import { BASE_URL } from "@/api/axios";
 
 export type Match = API_Match;
 
@@ -39,6 +39,10 @@ const Matches = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const userId = user?.id ?? null;
+
+  // 🟢 هل المستخدم ضيف ؟ (في حالة لم يسجّل دخول)
+  const isGuest = !userId;
+
   const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
 
   // 🟢 جلب المباريات
@@ -47,7 +51,7 @@ const Matches = () => {
     queryFn: getMatches,
   });
 
-  // 🟢 جلب توقعات المستخدم
+  // 🟢 جلب توقعات المستخدم (فقط إذا مسجّل دخول)
   const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery({
     queryKey: ["userPredictions", userId],
     queryFn: () => getUserPredictions(userId!),
@@ -100,7 +104,7 @@ const Matches = () => {
 
   // 🟢 إرسال التوقع
   const handleSubmitPrediction = (matchId: number) => {
-    if (!userId) return alert("🚫 يجب تسجيل الدخول أولاً");
+    if (isGuest) return alert("🚫 يجب تسجيل الدخول أولاً");
 
     const prediction = predictions[matchId];
     if (!prediction) return alert("❌ لم يتم إدخال أي توقع");
@@ -125,16 +129,6 @@ const Matches = () => {
 
   const loading =
     loadingMatches || loadingLeaderboard || (userId && loadingPredictions);
-
-  if (!userId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg text-muted-foreground animate-pulse">
-          جاري تحميل البيانات...
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen">
@@ -194,7 +188,6 @@ const Matches = () => {
                         </div>
 
                         <CardTitle className="text-center text-2xl flex items-center justify-center gap-3">
-                          {/* شعار الفريق الأول */}
                           {match.team1_logo && (
                             <img
                               src={`${BASE_URL}/storage/${match.team1_logo}`}
@@ -206,7 +199,6 @@ const Matches = () => {
 
                           <span className="text-primary mx-3">VS</span>
 
-                          {/* شعار الفريق الثاني */}
                           {match.team2_logo && (
                             <img
                               src={`${BASE_URL}/storage/${match.team2_logo}`}
@@ -297,10 +289,18 @@ const Matches = () => {
 
                           <Button
                             className="w-full mt-3 shadow-elegant"
-                            onClick={() => handleSubmitPrediction(match.id!)}
+                            onClick={() =>
+                              isGuest
+                                ? alert("🚫 يجب تسجيل الدخول أولاً")
+                                : handleSubmitPrediction(match.id!)
+                            }
                             disabled={isSubmitted || predictionMutation.isPending}
                           >
-                            {isSubmitted ? " تم الإرسال" : "إرسال التوقع"}
+                            {isSubmitted
+                              ? "تم الإرسال"
+                              : isGuest
+                              ? "سجّل الدخول للتوقع"
+                              : "إرسال التوقع"}
                           </Button>
                         </div>
                       </CardContent>
@@ -365,6 +365,7 @@ const Matches = () => {
           </div>
         </section>
       </main>
+
       <Footer />
       <BottomNav />
     </div>

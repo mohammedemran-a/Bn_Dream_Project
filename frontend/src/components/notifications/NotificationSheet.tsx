@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import {
   getNotifications,
   markNotificationAsRead,
   deleteNotification,
   clearAllNotifications,
 } from "@/api/notifications";
+
 import {
   Sheet,
   SheetContent,
@@ -14,50 +16,36 @@ import {
   SheetTrigger,
   SheetDescription,
 } from "@/components/ui/sheet";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Bell, X, Check } from "lucide-react";
 
-export const NotificationSheet = ({
-  open,
-  onOpenChange,
-  showTrigger = true,
-}: {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  showTrigger?: boolean;
-}) => {
+export const NotificationSheet = ({ showTrigger = true }: { showTrigger?: boolean }) => {
+  const [isOpen, setIsOpen] = useState(false); // ✅ تحكم داخلي فقط
+
   const queryClient = useQueryClient();
-  const [internalOpen, setInternalOpen] = useState(false);
+  const token = localStorage.getItem("token");
 
-  const isControlled = open !== undefined && onOpenChange !== undefined;
-  const actualOpen = isControlled ? open : internalOpen;
-  const actualOnOpenChange = isControlled ? onOpenChange : setInternalOpen;
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: getNotifications,
+    enabled: !!token, // لا يجلب بدون توكن
+    retry: false,
+  });
 
-const token = localStorage.getItem("token");
-
-const { data: notifications = [], isLoading } = useQuery({
-  queryKey: ["notifications"],
-  queryFn: getNotifications,
-  enabled: !!token, // ✅ فقط عند وجود توكن
-  retry: false, // ⛔ لا تعيد المحاولة
-});
-
-  // ✅ Mutation لتحديد كمقروء
   const markAsReadMutation = useMutation({
     mutationFn: markNotificationAsRead,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  // ✅ Mutation لحذف الإشعار
   const deleteMutation = useMutation({
     mutationFn: deleteNotification,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  // ✅ Mutation لحذف الكل
   const clearAllMutation = useMutation({
     mutationFn: clearAllNotifications,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
@@ -66,11 +54,12 @@ const { data: notifications = [], isLoading } = useQuery({
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   return (
-    <Sheet open={actualOpen} onOpenChange={actualOnOpenChange} modal={false}>
+    <Sheet open={isOpen} onOpenChange={setIsOpen} modal={false}>
       {showTrigger && (
         <SheetTrigger asChild>
           <Button variant="ghost" size="sm" className="relative p-2">
             <Bell className="h-5 w-5" />
+
             {unreadCount > 0 && (
               <Badge
                 variant="destructive"
@@ -84,7 +73,6 @@ const { data: notifications = [], isLoading } = useQuery({
       )}
 
       <SheetContent side="left" className="w-full sm:w-[400px]">
-        {/* ✅ العنوان مع زر حذف الكل في الأعلى */}
         <SheetHeader className="flex flex-row items-center justify-between">
           <div>
             <SheetTitle className="flex items-center gap-2">
@@ -109,7 +97,6 @@ const { data: notifications = [], isLoading } = useQuery({
           )}
         </SheetHeader>
 
-        {/* ✅ قائمة الإشعارات */}
         <ScrollArea className="h-[calc(100vh-120px)] mt-6">
           {isLoading && <p>جاري التحميل...</p>}
 
@@ -131,37 +118,42 @@ const { data: notifications = [], isLoading } = useQuery({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <p className="font-semibold text-sm mb-1">{notification.data.title}</p>
+
                       <p className="text-sm text-muted-foreground mb-2">
                         {notification.data.message}
                       </p>
+
                       <p className="text-xs text-muted-foreground">
                         {new Date(notification.created_at).toLocaleString()}
                       </p>
                     </div>
+
                     <div className="flex items-center gap-1 shrink-0">
                       {!notification.read_at && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 hover:bg-green-100 text-green-600"
-                          title="تعليم كمقروء"
                           onClick={() => markAsReadMutation.mutate(notification.id)}
+                          title="تعليم كمقروء"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
                       )}
+
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
-                        title="حذف الإشعار"
                         onClick={() => deleteMutation.mutate(notification.id)}
+                        title="حذف الإشعار"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
+
                 {index < notifications.length - 1 && <Separator className="my-2" />}
               </div>
             ))}
