@@ -16,6 +16,9 @@ import { sendContactMessage, ContactMessage, ContactResponse } from "@/api/conta
 import { getSettings, Settings } from "@/api/settings";
 import type { AxiosError } from "axios";
 
+// ✅ استيراد التوست من Sonner
+import { toast } from "sonner";
+
 const Contact = () => {
   const [formData, setFormData] = useState<ContactMessage>({
     name: "",
@@ -38,6 +41,7 @@ const Contact = () => {
         setSettings(response.data);
       } catch (error) {
         console.error("❌ خطأ في جلب الإعدادات:", error);
+        toast.error("حدث خطأ أثناء تحميل الإعدادات.");
       }
     };
 
@@ -56,12 +60,17 @@ const Contact = () => {
       const response: ContactResponse = await sendContactMessage(formData);
       console.log("Server response:", response);
 
-      alert("✅ تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
+      // ✅ Toast بدل alert
+      toast.success("تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
+
       setFormData({ name: "", email: "", phone: "", message: "" });
     } catch (error) {
       const err = error as AxiosError<{ message?: string }>;
       console.error("❌ خطأ أثناء إرسال الرسالة:", err.response?.data?.message || err.message);
-      alert("حدث خطأ أثناء الإرسال، حاول مجدداً.");
+
+      // ❌ alert  
+      // ⭕️ Toast
+      toast.error("حدث خطأ أثناء الإرسال، حاول مجدداً.");
     } finally {
       setLoading(false);
     }
@@ -157,7 +166,6 @@ const Contact = () => {
 
               {/* Contact Info */}
               <div className="space-y-6 animate-fade-in-left">
-
                 {/* Phone Card */}
                 <Card className="card-gradient border-2 hover-lift">
                   <CardHeader>
@@ -198,8 +206,8 @@ const Contact = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-
               </div>
+
             </div>
           </div>
         </section>

@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner"; // ✅ إضافة toast
+
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, Calendar, Tv } from "lucide-react";
 import { getLeaderboard, getUserPredictions, postPrediction } from "@/api/predictions.ts";
@@ -40,31 +42,26 @@ const Matches = () => {
   const { user } = useAuthStore();
   const userId = user?.id ?? null;
 
-  // 🟢 هل المستخدم ضيف ؟ (في حالة لم يسجّل دخول)
   const isGuest = !userId;
 
   const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
 
-  // 🟢 جلب المباريات
   const { data: matches = [], isLoading: loadingMatches } = useQuery<Match[]>({
     queryKey: ["matches"],
     queryFn: getMatches,
   });
 
-  // 🟢 جلب توقعات المستخدم (فقط إذا مسجّل دخول)
   const { data: userPredictions = [], isLoading: loadingPredictions } = useQuery({
     queryKey: ["userPredictions", userId],
     queryFn: () => getUserPredictions(userId!),
     enabled: !!userId,
   });
 
-  // 🟢 جلب المتصدرين
   const { data: leaderboard = [], isLoading: loadingLeaderboard } = useQuery<LeaderboardItem[]>({
     queryKey: ["leaderboard"],
     queryFn: getLeaderboard,
   });
 
-  // 🟢 إرسال التوقع
   const predictionMutation = useMutation({
     mutationFn: (data: { matchId: number; team1: number; team2: number }) =>
       postPrediction({
@@ -75,10 +72,13 @@ const Matches = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userPredictions"] });
+      toast.success("تم إرسال التوقع بنجاح 🎉"); // ⭐ نجاح
+    },
+    onError: () => {
+      toast.error("حدث خطأ أثناء إرسال التوقع ❌");
     },
   });
 
-  // ⚙️ تغيير التوقع
   const handlePredictionChange = (
     matchId: number,
     team: "team1" | "team2",
@@ -102,17 +102,17 @@ const Matches = () => {
     });
   };
 
-  // 🟢 إرسال التوقع
   const handleSubmitPrediction = (matchId: number) => {
-    if (isGuest) return alert("🚫 يجب تسجيل الدخول أولاً");
+    if (isGuest) return toast.error("🚫 يجب تسجيل الدخول أولاً");
 
     const prediction = predictions[matchId];
-    if (!prediction) return alert("❌ لم يتم إدخال أي توقع");
+    if (!prediction) return toast.error("❌ لم يتم إدخال أي توقع");
 
-    if (prediction.submitted) return alert("لقد تم إرسال هذا التوقع مسبقًا");
+    if (prediction.submitted)
+      return toast.error("تم إرسال هذا التوقع مسبقًا");
 
     if (!prediction.team1 && !prediction.team2) {
-      return alert("❌ الرجاء إدخال التوقعين قبل الإرسال");
+      return toast.error("❌ الرجاء إدخال التوقعين قبل الإرسال");
     }
 
     predictionMutation.mutate({
@@ -291,16 +291,12 @@ const Matches = () => {
                             className="w-full mt-3 shadow-elegant"
                             onClick={() =>
                               isGuest
-                                ? alert("🚫 يجب تسجيل الدخول أولاً")
+                                ? toast.error("🚫 يرجى تسجيل الدخول أولاً")
                                 : handleSubmitPrediction(match.id!)
                             }
                             disabled={isSubmitted || predictionMutation.isPending}
                           >
-                            {isSubmitted
-                              ? "تم الإرسال"
-                              : isGuest
-                              ? "سجّل الدخول للتوقع"
-                              : "إرسال التوقع"}
+                            {isSubmitted ? "تم الإرسال" : "إرسال التوقع"}
                           </Button>
                         </div>
                       </CardContent>
@@ -312,7 +308,7 @@ const Matches = () => {
           </div>
         </section>
 
-        {/* 🏆 جدول المتصدرين */}
+        {/* 🏆 المتصدرين */}
         <section className="py-12 px-4 bg-muted/30">
           <div className="container mx-auto">
             <div className="text-center mb-8 animate-fade-in">

@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/useAuthStore";
-import { BASE_URL } from "@/api/axios"; // ✅ استدعاء BASE_URL
+import { BASE_URL } from "@/api/axios";
 
 const RoomCard = ({ room }: { room: Room }) => {
   const queryClient = useQueryClient();
@@ -99,11 +99,18 @@ const RoomCard = ({ room }: { room: Room }) => {
     onError: () => toast.error("⚠️ حدث خطأ أثناء تنفيذ الحجز."),
   });
 
+  // ✅ التعديل هنا فقط
   const handleOpenModal = () => {
+    if (!user) {
+      toast.error("⚠️ يرجى تسجيل الدخول أولاً");
+      return;
+    }
+
     if (room.status === "محجوز") {
       toast.error("❌ هذه الغرفة محجوزة بالفعل.");
       return;
     }
+
     setShowModal(true);
   };
 
@@ -122,7 +129,7 @@ const RoomCard = ({ room }: { room: Room }) => {
           <img
             src={
               room.image_path
-                ? `${BASE_URL}/storage/${room.image_path}` // ✅ تعديل المسار
+                ? `${BASE_URL}/storage/${room.image_path}`
                 : "https://via.placeholder.com/800x600?text=No+Image"
             }
             alt={room.name}
@@ -212,7 +219,9 @@ const RoomCard = ({ room }: { room: Room }) => {
                     onChange={(e) => setDurationValue(Number(e.target.value))}
                   />
                   <Select
-                    onValueChange={(val: "hours" | "days") => setDurationType(val)}
+                    onValueChange={(val: "hours" | "days") =>
+                      setDurationType(val)
+                    }
                     defaultValue="days"
                   >
                     <SelectTrigger>
@@ -235,7 +244,9 @@ const RoomCard = ({ room }: { room: Room }) => {
                 <Label>طريقة الدفع</Label>
                 <Select
                   value={paymentMethod}
-                  onValueChange={(val: "cash" | "wallet") => setPaymentMethod(val)}
+                  onValueChange={(val: "cash" | "wallet") =>
+                    setPaymentMethod(val)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="اختر طريقة الدفع" />
