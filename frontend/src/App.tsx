@@ -32,9 +32,6 @@ import AdminSettings from "./pages/admin/AdminSettings";
 // Zustand Store
 import { useAuthStore } from "@/store/useAuthStore";
 
-// الحماية
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import GuestRoute from "@/components/auth/GuestRoute";
 import AdminAds from "./pages/admin/AdminAds";
 
 const queryClient = new QueryClient();
@@ -66,171 +63,27 @@ const App = () => {
             <BrowserRouter>
               <Routes>
 
-                {/* صفحة تسجيل الدخول — تظهر فقط للضيوف */}
-                <Route
-                  path="/auth"
-                  element={
-                    <GuestRoute>
-                      <Auth />
-                    </GuestRoute>
-                  }
-                />
+                {/* صفحات المستخدم */}
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/rooms" element={<Rooms />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/matches" element={<Matches />} />
+                <Route path="/bot" element={<Bot />} />
+                <Route path="/contact" element={<Contact />} />
 
-                {/* الصفحة الرئيسية — محمية */}
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* صفحات المستخدم — محمية */}
-                <Route
-                  path="/rooms"
-                  element={
-                    <ProtectedRoute>
-                      <Rooms />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/services"
-                  element={
-                    <ProtectedRoute>
-                      <Services />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/matches"
-                  element={
-                    <ProtectedRoute>
-                      <Matches />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/bot"
-                  element={
-                    <ProtectedRoute>
-                      <Bot />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/contact"
-                  element={
-                    <ProtectedRoute>
-                      <Contact />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* صفحات الإدارة — محمية */}
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/rooms"
-                  element={
-                    <ProtectedRoute>
-                      <AdminRooms />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/bookings"
-                  element={
-                    <ProtectedRoute>
-                      <AdminBookings />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/services"
-                  element={
-                    <ProtectedRoute>
-                      <AdminServices />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/orders"
-                  element={
-                    <ProtectedRoute>
-                      <AdminOrders />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/matches"
-                  element={
-                    <ProtectedRoute>
-                      <AdminMatches />
-                    </ProtectedRoute>
-                  }
-                  
-                />
-                <Route
-                  path="/admin/ads"
-                  element={
-                    <ProtectedRoute>
-                      <AdminAds />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/users"
-                  element={
-                    <ProtectedRoute>
-                      <AdminUsers />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/roles"
-                  element={
-                    <ProtectedRoute>
-                      <AdminRoles />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/notifications"
-                  element={
-                    <ProtectedRoute>
-                      <AdminNotifications />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/settings"
-                  element={
-                    <ProtectedRoute>
-                      <AdminSettings />
-                    </ProtectedRoute>
-                  }
-                />
+                {/* صفحات الإدارة */}
+                <Route path="/admin" element={<Dashboard />} />
+                <Route path="/admin/rooms" element={<AdminRooms />} />
+                <Route path="/admin/bookings" element={<AdminBookings />} />
+                <Route path="/admin/services" element={<AdminServices />} />
+                <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="/admin/matches" element={<AdminMatches />} />
+                <Route path="/admin/ads" element={<AdminAds />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/roles" element={<AdminRoles />} />
+                <Route path="/admin/notifications" element={<AdminNotifications />} />
+                <Route path="/admin/settings" element={<AdminSettings />} />
 
                 {/* صفحة غير موجودة */}
                 <Route path="*" element={<NotFound />} />

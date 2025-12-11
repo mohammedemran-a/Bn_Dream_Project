@@ -8,7 +8,7 @@ export const register = async (data) => {
     if (token) localStorage.setItem("token", token);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: "خطأ في التسجيل" };
+    throw error.response?.data || { message: error.message || "خطأ في التسجيل" };
   }
 };
 
@@ -20,25 +20,16 @@ export const login = async (data) => {
     if (token) localStorage.setItem("token", token);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: "خطأ في تسجيل الدخول" };
+    throw error.response?.data || { message: error.message || "خطأ في تسجيل الدخول" };
   }
 };
 
 // تسجيل الخروج
 export const logout = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-
   try {
-    await axios.post(
-      "/api/logout",
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    await axios.post("/api/logout");
   } catch (error) {
-    throw error.response?.data || { message: "فشل تسجيل الخروج" };
+    throw error.response?.data || { message: error.message || "فشل تسجيل الخروج" };
   } finally {
     localStorage.removeItem("token");
   }
@@ -50,11 +41,10 @@ export const getUser = async () => {
   if (!token) return null;
 
   try {
-    const response = await axios.get("/api/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get("/api/user");
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: "فشل جلب بيانات المستخدم" };
+    localStorage.removeItem("token");
+    return null;
   }
 };

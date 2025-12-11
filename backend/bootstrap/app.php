@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         //
         $middleware->web(append: [
+            //  \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            // 'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
             // أمثلة إن أردت إضافة شيء مثل:
             // \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
